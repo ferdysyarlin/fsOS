@@ -3,164 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>fsOS - Vue Version</title>
-
-    <!-- Dependencies -->
+    <title>Data Viewer dari Google Sheets</title>
+    <!-- Memuat Tailwind CSS untuk styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/vue@3"></script>
-
-    <!-- Custom Styles -->
+    <!-- Memuat Vue.js -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        .nav-link.active { background-color: #e2e8f0; color: #0f172a; font-weight: 600; }
-        [v-cloak] { display: none; }
-        
-        /* Masonry Layout Styling */
-        .masonry-container { column-gap: 1rem; }
-        .masonry-item { display: inline-block; width: 100%; margin-bottom: 1rem; break-inside: avoid; }
-        @media (min-width: 640px) { .masonry-container { column-count: 2; } }
-        @media (min-width: 1024px) { .masonry-container { column-count: 3; } }
-        @media (min-width: 1280px) { .masonry-container { column-count: 4; } }
-
-        /* Transitions */
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
-        .fade-enter-from, .fade-leave-to { opacity: 0; }
-        .scale-enter-active, .scale-leave-active { transition: all 0.2s ease-out; }
-        .scale-enter-from, .scale-leave-to { transform: scale(.95); opacity: 0; }
+        /* Style tambahan untuk tampilan yang lebih baik */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .loader {
+            border-top-color: #3498db;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 </head>
-<body class="bg-slate-100 text-slate-800 antialiased">
+<body class="bg-gray-100 text-gray-800">
 
-<div id="app" class="flex h-screen overflow-hidden" v-cloak>
-    
-    <!-- Sidebar -->
-    <aside id="sidebar" class="absolute md:relative z-30 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col transition-all duration-300"
-        :class="{ 'w-64': !isSidebarCollapsed, 'w-20': isSidebarCollapsed, '-translate-x-full': !isSidebarVisible, 'translate-x-0': isSidebarVisible, 'md:translate-x-0': true }">
-        <div class="h-16 flex items-center justify-between px-4 border-b border-slate-200">
-            <h1 class="text-xl font-bold text-slate-900 transition-opacity" :class="{'opacity-0': isSidebarCollapsed}">fsOS v.Vue</h1>
-            <button @click="isSidebarCollapsed = !isSidebarCollapsed" class="w-10 h-10 hidden md:flex items-center justify-center rounded-lg hover:bg-slate-100">
-                <i class="fa-solid text-slate-600" :class="isSidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
-            </button>
+    <div id="app" class="container mx-auto p-4 md:p-8">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="p-6 border-b border-gray-200">
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Data dari Google Sheet</h1>
+                <p class="mt-1 text-gray-600">Menampilkan data secara dinamis dari backend Google Apps Script.</p>
+            </div>
+
+            <!-- Tampilan Loading -->
+            <div v-if="loading" class="p-8 text-center">
+                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mx-auto mb-4"></div>
+                <p class="text-lg text-gray-500">Memuat data...</p>
+            </div>
+
+            <!-- Tampilan Error -->
+            <div v-if="error" class="p-8 text-center bg-red-50 border-l-4 border-red-400">
+                <h3 class="font-bold text-red-800">Terjadi Kesalahan</h3>
+                <p class="text-red-600 mt-2">{{ error }}</p>
+            </div>
+
+            <!-- Tampilan Tabel Data -->
+            <div v-if="!loading && !error && rows.length > 0" class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <!-- Header Tabel Dinamis -->
+                            <th v-for="header in headers" :key="header" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ header }}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <!-- Baris Data Dinamis -->
+                        <tr v-for="(row, index) in rows" :key="index" class="hover:bg-gray-50 transition-colors duration-200">
+                            <td v-for="header in headers" :key="header" class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                {{ row[header] }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Tampilan Jika Tidak Ada Data -->
+            <div v-if="!loading && !error && rows.length === 0" class="p-8 text-center">
+                <p class="text-lg text-gray-500">Tidak ada data untuk ditampilkan.</p>
+            </div>
         </div>
-        <nav class="flex-1 p-2 space-y-2">
-            <a href="#" @click.prevent="currentPage = 'kinerja'" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg" :class="{'active': currentPage === 'kinerja'}">
-                <i class="fa-solid fa-desktop w-5 h-5 mr-3 text-center"></i>
-                <span class="transition-opacity" :class="{'opacity-0': isSidebarCollapsed}">Kinerja</span>
-            </a>
-            <a href="#" @click.prevent="clearCacheAndReload" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg">
-                <i class="fa-solid fa-broom w-5 h-5 mr-3 text-center"></i>
-                <span class="transition-opacity" :class="{'opacity-0': isSidebarCollapsed}">Clear Cache</span>
-            </a>
-        </nav>
-    </aside>
-
-    <!-- Main Content Area -->
-    <div class="flex-1 flex flex-col relative">
-        <header class="h-16 flex md:hidden items-center justify-between px-4 bg-white border-b border-slate-200">
-            <button @click="isSidebarVisible = true" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-100">
-                <i class="fa-solid fa-bars text-slate-600"></i>
-            </button>
-            <h1 class="text-lg font-bold text-slate-900">fsOS</h1>
-            <div class="w-10"></div>
-        </header>
-
-        <main class="flex-1 p-2 md:p-6 overflow-y-auto">
-            <!-- Loading State -->
-            <div v-if="isLoading" class="w-full text-center p-10">
-                <i class="fas fa-spinner fa-spin fa-3x text-indigo-500"></i>
-                <p class="mt-4 text-gray-600">{{ loadingMessage }}</p>
-            </div>
-
-            <!-- Kinerja Cards -->
-            <div v-else-if="records.length > 0" class="masonry-container">
-                <div v-for="record in sortedRecords" :key="record['ID Kinerja']" @click="showEditModal(record)"
-                     class="masonry-item group relative border rounded-xl shadow-sm hover:shadow-lg transition-shadow p-4 flex flex-col cursor-pointer"
-                     :class="[softColors[record.Warna]?.bg || softColors.default.bg, softColors[record.Warna]?.border || softColors.default.border]">
-                    
-                    <!-- Hover Actions -->
-                    <div class="absolute top-2 right-2 flex items-center space-x-1 bg-white/70 backdrop-blur-sm p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
-                        <button @click.stop="copyDescription(record.Deskripsi, $event)" title="Salin Deskripsi" class="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600"><i class="fas fa-copy"></i></button>
-                        <button @click.stop="showDeleteModal(record)" title="Hapus" class="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                    
-                    <!-- Card Content -->
-                    <div class="flex-grow">
-                        <div class="flex items-center mb-2">
-                            <div v-if="record.Pin == 1" title="Disematkan" class="text-indigo-600 cursor-pointer mr-2"><i class="fas fa-thumbtack fa-sm"></i></div>
-                            <p class="text-xs text-slate-500">{{ record.Tanggal }}</p>
-                        </div>
-                        <a v-if="record.Foto" :href="record.Foto" target="_blank" @click.stop class="block my-3">
-                            <img :src="'https://drive.google.com/thumbnail?id=' + extractIdFromUrl(record.Foto) + '&sz=w500'" alt="Foto Kinerja" class="rounded-md w-full object-cover">
-                        </a>
-                        <p class="text-slate-800 text-sm whitespace-pre-wrap" v-html="record.Deskripsi || '<i class=\'text-slate-400\'>Tidak ada deskripsi</i>'"></p>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Empty State -->
-            <div v-else class="bg-white p-6 rounded-lg shadow-sm">
-                <p>Tidak ada data. Klik tombol '+' untuk menambah data baru.</p>
-            </div>
-        </main>
-        
-        <!-- Floating Add Button -->
-        <div class="absolute bottom-6 right-6 md:bottom-8 md:right-8">
-            <button @click="showEditModal(null)" title="Tambah Data Baru" class="bg-indigo-600 hover:bg-indigo-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-indigo-300">
-                <i class="fas fa-plus fa-lg"></i>
-            </button>
-        </div>
+        <footer class="text-center mt-6 text-sm text-gray-500">
+            <p>Dibuat dengan Vue.js dan Google Apps Script.</p>
+        </footer>
     </div>
 
-    <!-- MODALS -->
-    <!-- Edit/Add Modal -->
-    <transition name="fade">
-        <div v-if="activeModal === 'edit'" @click="activeModal = null" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div @click.stop class="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[80vh]">
-                <div class="flex-1 flex flex-col p-6 overflow-y-auto">
-                    <textarea v-model="editableRecord.Deskripsi" required class="w-full h-48 resize-none focus:outline-none text-slate-800 placeholder-slate-400 text-lg mb-4" placeholder="Tulis sesuatu..."></textarea>
-                    <!-- Attachment sections will go here -->
-                </div>
-                <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between rounded-b-xl">
-                    <div class="flex items-center gap-4">
-                        <input type="date" v-model="editableRecord.formattedDate" required class="text-sm text-slate-600 focus:outline-none bg-transparent border-b-2 border-transparent focus:border-indigo-500">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button type="button" @click="activeModal = null" class="px-4 py-2 bg-slate-200 text-slate-700 text-sm rounded-md hover:bg-slate-300">Batal</button>
-                        <button @click="saveRecord" :disabled="isSaving" class="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-md hover:bg-slate-900 w-28 text-center">
-                            <i v-if="isSaving" class="fas fa-spinner fa-spin"></i>
-                            <span v-else>{{ isNewRecord ? 'Tambah' : 'Simpan' }}</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </transition>
-    
-    <!-- Delete Confirmation Modal -->
-    <transition name="fade">
-         <div v-if="activeModal === 'delete'" @click="activeModal = null" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-             <div @click.stop class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
-                <h3 class="text-lg font-bold text-slate-800">Konfirmasi Hapus</h3>
-                <p class="text-sm text-slate-600 mt-2">Yakin ingin menghapus data ini?</p>
-                <div class="mt-6 flex justify-end space-x-3">
-                    <button @click="activeModal = null" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300">Batal</button>
-                    <button @click="confirmDelete" :disabled="isSaving" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 w-28 text-center">
-                        <i v-if="isSaving" class="fas fa-spinner fa-spin"></i>
-                        <span v-else>Ya, Hapus</span>
-                    </button>
-                </div>
-            </div>
-         </div>
-    </transition>
-</div>
+    <script>
+        const { createApp } = Vue;
 
-<script src="app.js" type="module"></script>
+        createApp({
+            data() {
+                return {
+                    // PENTING: Ganti URL ini dengan URL Aplikasi Web dari Google Apps Script Anda!
+                    gasWebAppUrl: 'https://script.google.com/macros/s/AKfycbymg5yqUKbXALgtc9nLj5XzEO_z_ee2BWAvXTu94gBCxx5qFvqZO-Biy9_cV6cx8ZyyIw/exec',
+                    loading: true,
+                    error: null,
+                    headers: [],
+                    rows: []
+                };
+            },
+            async mounted() {
+                // Fungsi ini akan dijalankan saat komponen aplikasi dimuat
+                if (this.gasWebAppUrl === 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+                    this.error = 'Harap masukkan URL Google Apps Script pada variabel "gasWebAppUrl" di dalam kode.';
+                    this.loading = false;
+                    return;
+                }
+                await this.fetchData();
+            },
+            methods: {
+                async fetchData() {
+                    this.loading = true;
+                    this.error = null;
+                    try {
+                        const response = await fetch(this.gasWebAppUrl);
+                        if (!response.ok) {
+                            throw new Error(`Gagal mengambil data. Status: ${response.status}`);
+                        }
+                        const data = await response.json();
+
+                        if (data && Array.isArray(data) && data.length > 0) {
+                            // Mengambil header secara dinamis dari kunci objek pertama
+                            this.headers = Object.keys(data[0]);
+                            this.rows = data;
+                        } else {
+                            // Kasus jika sheet kosong atau format tidak sesuai
+                            this.rows = [];
+                            this.headers = [];
+                        }
+                    } catch (err) {
+                        console.error('Error fetching data:', err);
+                        this.error = err.message || 'Tidak dapat terhubung ke server. Periksa kembali URL dan koneksi Anda.';
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
+
 </body>
 </html>
-
