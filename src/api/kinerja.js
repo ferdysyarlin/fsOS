@@ -1,5 +1,5 @@
 // !!! PENTING: Ganti dengan URL Web App Anda dari Google Apps Script !!!
-const GAS_URL = 'GANTI_DENGAN_URL_WEB_APP_ANDA';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyvacAi_LNvWz7Ukxds5N-ce2BmN-u08jINSN_EgfihQw55OaPVHJiJsV07q1rNgDwF/exec';
 
 /**
  * Fungsi helper untuk melakukan request POST ke GAS API.
