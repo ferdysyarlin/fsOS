@@ -1,5 +1,5 @@
 // !!! PENTING: Ganti dengan URL Web App Anda dari Google Apps Script !!!
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfwuHgSGTW9d8blseHv5_p8oYXpc5bc6PR9Mt7ICI08Yh7aNFpXtGGpllQgUOciWw9/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwvrvoaQ4TY4CQP7pZJ2wcV6G_nGHdaNwuzn0Zeurn6lypCyDHyV4hQfATH-bSgHEVB/exec';
 
 // Variabel untuk Caching Data
 let kinerjaCache = null; // Akan menyimpan data dari sheet agar tidak perlu fetch berulang kali
@@ -335,7 +335,6 @@ async function showEditModal(idKinerja) {
           <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl animate-scale-in flex flex-col max-h-[90vh]">
             <div id="modal-content-area" class="flex-1 p-6 overflow-y-auto">
                 <textarea id="form-deskripsi" required class="w-full h-48 resize-none focus:outline-none text-slate-800 placeholder-slate-400 text-lg mb-4" placeholder="Tulis sesuatu...">${dataToEdit.Deskripsi || ''}</textarea>
-                <!-- PERBAIKAN: Mengganti id dari form-kategori ke form-label -->
                 <input type="hidden" id="form-label" value="${dataToEdit.Label || ''}">
                 <div id="selected-labels-container" class="flex flex-wrap gap-2 mb-4"></div>
                 <div class="space-y-3">
@@ -364,7 +363,6 @@ async function showEditModal(idKinerja) {
 
     renderAttachment('photo', dataToEdit.Foto, finalIdKinerja);
     renderAttachment('file', dataToEdit.File, finalIdKinerja);
-    // PERBAIKAN: Membaca dari properti Label
     renderSelectedLabels(dataToEdit.Label);
 
     document.querySelectorAll('#edit-color-picker .color-swatch').forEach(swatch => {
@@ -396,7 +394,6 @@ async function handleSaveKinerja(isNew, idKinerja) {
         'ID Kinerja': idKinerja,
         'Tanggal': `${day}/${month}/${year}`,
         'Deskripsi': document.getElementById('form-deskripsi').value,
-        // PERBAIKAN: Mengirim data dengan kunci 'Label'
         'Label': document.getElementById('form-label').value,
         'Warna': document.getElementById('form-warna').value,
         'Foto': isNew ? '' : (kinerjaCache.find(i=>i['ID Kinerja'] === idKinerja)?.Foto || ''),
@@ -467,7 +464,8 @@ function handleFileUpload(inputElement, idKinerja, columnName) {
     reader.onload = async (e) => {
         const fileObject = { fileName: file.name, mimeType: file.type, bytes: e.target.result.split(',')[1] };
         try {
-            const response = await api.post('uploadFile', { fileObject, idKinerja, columnName });
+            // PERUBAHAN: Menambahkan sheetName ke payload
+            const response = await api.post('uploadFile', { fileObject, idKinerja, columnName, sheetName: 'Kinerja' });
             if (response.error) throw new Error(response.error);
 
             const itemInCache = kinerjaCache.find(item => item['ID Kinerja'] === idKinerja);
@@ -492,7 +490,6 @@ async function showLabelModal() {
 
     const listContainer = document.getElementById('label-list-container');
     const searchInput = document.getElementById('label-search-input');
-    // PERBAIKAN: Mengambil elemen input label yang benar
     const labelInput = document.getElementById('form-label');
     let selectedLabels = (labelInput.value || '').split(',').map(l => l.trim()).filter(Boolean);
     
