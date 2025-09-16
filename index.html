@@ -3,132 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Viewer dari Google Sheets</title>
+    <title>Aplikasi Pencatat Kinerja</title>
     <!-- Memuat Tailwind CSS untuk styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Memuat Vue.js -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <style>
         /* Style tambahan untuk tampilan yang lebih baik */
         body {
             font-family: 'Inter', sans-serif;
         }
         .loader {
-            border-top-color: #3498db;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
+            margin: 20px auto;
         }
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <div id="app" class="container mx-auto p-4 md:p-8">
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div class="p-6 border-b border-gray-200">
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Data dari Google Sheet</h1>
-                <p class="mt-1 text-gray-600">Menampilkan data secara dinamis dari backend Google Apps Script.</p>
-            </div>
+    <div class="container mx-auto p-4 md:p-8">
+        <h1 class="text-3xl font-bold mb-6 text-center text-gray-700">Pencatat Kinerja</h1>
 
-            <!-- Tampilan Loading -->
-            <div v-if="loading" class="p-8 text-center">
-                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mx-auto mb-4"></div>
-                <p class="text-lg text-gray-500">Memuat data...</p>
-            </div>
+        <!-- Formulir untuk Menambah Data Baru -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8 max-w-2xl mx-auto">
+            <h2 class="text-2xl font-semibold mb-4">Tambah Kinerja Baru</h2>
+            <form id="kinerjaForm" class="space-y-4">
+                <div>
+                    <label for="tanggal" class="block text-sm font-medium text-gray-700">Tanggal</label>
+                    <input type="date" id="tanggal" name="Tanggal" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required>
+                </div>
+                <div>
+                    <label for="deskripsi" class="block text-sm font-medium text-gray-700">Deskripsi</label>
+                    <textarea id="deskripsi" name="Deskripsi" rows="3" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" required></textarea>
+                </div>
+                <div>
+                    <label for="label" class="block text-sm font-medium text-gray-700">Label</label>
+                    <input type="text" id="label" name="Label" placeholder="Contoh: Proyek A, Rapat Tim" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                 <div>
+                    <label for="warna" class="block text-sm font-medium text-gray-700">Warna</label>
+                    <input type="color" id="warna" name="Warna" value="#3b82f6" class="mt-1 block w-full h-10 px-1 py-1 bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                    Simpan Kinerja
+                </button>
+            </form>
+            <div id="formMessage" class="mt-4 text-center"></div>
+        </div>
 
-            <!-- Tampilan Error -->
-            <div v-if="error" class="p-8 text-center bg-red-50 border-l-4 border-red-400">
-                <h3 class="font-bold text-red-800">Terjadi Kesalahan</h3>
-                <p class="text-red-600 mt-2">{{ error }}</p>
-            </div>
-
-            <!-- Tampilan Tabel Data -->
-            <div v-if="!loading && !error && rows.length > 0" class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <!-- Header Tabel Dinamis -->
-                            <th v-for="header in headers" :key="header" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                {{ header }}
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <!-- Baris Data Dinamis -->
-                        <tr v-for="(row, index) in rows" :key="index" class="hover:bg-gray-50 transition-colors duration-200">
-                            <td v-for="header in headers" :key="header" class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                {{ row[header] }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Tampilan Jika Tidak Ada Data -->
-            <div v-if="!loading && !error && rows.length === 0" class="p-8 text-center">
-                <p class="text-lg text-gray-500">Tidak ada data untuk ditampilkan.</p>
+        <!-- Area untuk Menampilkan Data -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-semibold mb-4">Daftar Kinerja</h2>
+            <div id="loader" class="loader"></div>
+            <div id="dataContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Data akan ditampilkan di sini oleh JavaScript -->
             </div>
         </div>
-        <footer class="text-center mt-6 text-sm text-gray-500">
-            <p>Dibuat dengan Vue.js dan Google Apps Script.</p>
-        </footer>
     </div>
 
     <script>
-        const { createApp } = Vue;
+        // !!! PENTING: Ganti dengan URL Web App Anda dari Google Apps Script !!!
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbw8RQYdhWJPB0VgyExaEN9OLjtPD0Xyf3ckerUPql8tXniQFwi5Gw9HRmURY3FRvODV/exec'; // <-- GANTI URL INI
 
-        createApp({
-            data() {
-                return {
-                    // PENTING: Ganti URL ini dengan URL Aplikasi Web dari Google Apps Script Anda!
-                    gasWebAppUrl: 'https://script.google.com/macros/s/AKfycbxJwgP4AQhWJQGpIBpfmZFa19vI6YNsv9yEiPaW7ZgwtwzB4C-MwOJrrUxDQK9QqYER/exec',
-                    loading: true,
-                    error: null,
-                    headers: [],
-                    rows: []
-                };
-            },
-            async mounted() {
-                // Fungsi ini akan dijalankan saat komponen aplikasi dimuat
-                if (this.gasWebAppUrl === 'PASTE_YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-                    this.error = 'Harap masukkan URL Google Apps Script pada variabel "gasWebAppUrl" di dalam kode.';
-                    this.loading = false;
-                    return;
-                }
-                await this.fetchData();
-            },
-            methods: {
-                async fetchData() {
-                    this.loading = true;
-                    this.error = null;
-                    try {
-                        const response = await fetch(this.gasWebAppUrl);
-                        if (!response.ok) {
-                            throw new Error(`Gagal mengambil data. Status: ${response.status}`);
-                        }
-                        const data = await response.json();
+        const form = document.getElementById('kinerjaForm');
+        const dataContainer = document.getElementById('dataContainer');
+        const loader = document.getElementById('loader');
+        const formMessage = document.getElementById('formMessage');
 
-                        if (data && Array.isArray(data) && data.length > 0) {
-                            // Mengambil header secara dinamis dari kunci objek pertama
-                            this.headers = Object.keys(data[0]);
-                            this.rows = data;
-                        } else {
-                            // Kasus jika sheet kosong atau format tidak sesuai
-                            this.rows = [];
-                            this.headers = [];
-                        }
-                    } catch (err) {
-                        console.error('Error fetching data:', err);
-                        this.error = err.message || 'Tidak dapat terhubung ke server. Periksa kembali URL dan koneksi Anda.';
-                    } finally {
-                        this.loading = false;
-                    }
+        /**
+         * Mengambil data dari Google Sheet dan menampilkannya.
+         */
+        async function fetchData() {
+            loader.style.display = 'block';
+            dataContainer.innerHTML = '';
+            try {
+                const response = await fetch(GAS_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                const data = await response.json();
+                
+                // Urutkan data berdasarkan tanggal terbaru
+                data.sort((a, b) => new Date(b.Tanggal) - new Date(a.Tanggal));
+                
+                displayData(data);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                dataContainer.innerHTML = `<p class="text-red-500 text-center col-span-full">Gagal memuat data. Periksa konsol untuk detailnya.</p>`;
+            } finally {
+                loader.style.display = 'none';
             }
-        }).mount('#app');
-    </script>
+        }
 
+        /**
+         * Menampilkan data ke dalam container.
+         * @param {Array<Object>} data - Array berisi objek data kinerja.
+         */
+        function displayData(data) {
+            if (data.length === 0) {
+                dataContainer.innerHTML = '<p class="text-gray-500 text-center col-span-full">Belum ada data kinerja.</p>';
+                return;
+            }
+
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'border-l-4 p-4 rounded-r-lg shadow-sm bg-gray-50';
+                card.style.borderColor = item.Warna || '#3b82f6';
+                
+                card.innerHTML = `
+                    <p class="font-semibold text-lg">${item.Deskripsi || 'Tanpa Deskripsi'}</p>
+                    <p class="text-sm text-gray-600">${new Date(item.Tanggal).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) || ''}</p>
+                    ${item.Label ? `<span class="mt-2 inline-block bg-gray-200 text-gray-700 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">${item.Label}</span>` : ''}
+                `;
+                dataContainer.appendChild(card);
+            });
+        }
+
+        /**
+         * Menangani submit form untuk mengirim data ke Google Sheet.
+         * @param {Event} e - Event submit.
+         */
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Tambahkan field yang dibuat otomatis
+            const tgl = new Date(data.Tanggal);
+            data['ID Kinerja'] = `KIN-${Date.now()}`;
+            data['Hari'] = tgl.toLocaleDateString('id-ID', { weekday: 'long' });
+            data['Bulan'] = tgl.toLocaleDateString('id-ID', { month: 'long' });
+            data['Tahun'] = tgl.getFullYear();
+            data['Pin'] = 'false'; // Default value
+
+            formMessage.textContent = 'Menyimpan...';
+            formMessage.className = 'text-blue-500';
+
+            try {
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Diperlukan untuk tipe redirect dari GAS
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+                
+                // Karena 'no-cors' tidak memberikan akses ke response, kita asumsikan berhasil
+                // dan langsung refresh data.
+                formMessage.textContent = 'Data berhasil disimpan!';
+                formMessage.className = 'text-green-600';
+                form.reset();
+                fetchData();
+
+            } catch (error) {
+                console.error('Error submitting form:', error);
+                formMessage.textContent = 'Gagal menyimpan data.';
+                formMessage.className = 'text-red-500';
+            } finally {
+                 setTimeout(() => formMessage.textContent = '', 3000);
+            }
+        }
+
+        // Event listener untuk form
+        form.addEventListener('submit', handleFormSubmit);
+
+        // Muat data saat halaman pertama kali dibuka
+        document.addEventListener('DOMContentLoaded', fetchData);
+    </script>
 </body>
 </html>
