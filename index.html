@@ -3,191 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catatan Kinerja</title>
+    <title>fsOS - Vue Version</title>
 
-    <!-- Tailwind CSS -->
+    <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" xintegrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
-    <!-- Google Fonts: Inter -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Vue 3 -->
     <script src="https://unpkg.com/vue@3"></script>
 
     <!-- Custom Styles -->
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        /* Custom Scrollbar Styling */
+        body { font-family: 'Inter', sans-serif; }
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; } /* slate-100 */
-        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; } /* slate-400 */
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; } /* slate-500 */
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .nav-link.active { background-color: #e2e8f0; color: #0f172a; font-weight: 600; }
+        [v-cloak] { display: none; }
         
-        /* Active Navigation Link */
-        .nav-link.active {
-            background-color: #e2e8f0; /* slate-200 */
-            color: #0f172a; /* slate-900 */
-            font-weight: 600;
-        }
+        /* Masonry Layout Styling */
+        .masonry-container { column-gap: 1rem; }
+        .masonry-item { display: inline-block; width: 100%; margin-bottom: 1rem; break-inside: avoid; }
+        @media (min-width: 640px) { .masonry-container { column-count: 2; } }
+        @media (min-width: 1024px) { .masonry-container { column-count: 3; } }
+        @media (min-width: 1280px) { .masonry-container { column-count: 4; } }
 
-        /* Transition for sidebar text */
-        .nav-text {
-            transition: opacity 0.2s ease-in-out;
-        }
-
-        /* Basic modal transition */
-        .modal-enter-active, .modal-leave-active {
-            transition: opacity 0.3s ease;
-        }
-        .modal-enter-from, .modal-leave-to {
-            opacity: 0;
-        }
+        /* Transitions */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+        .scale-enter-active, .scale-leave-active { transition: all 0.2s ease-out; }
+        .scale-enter-from, .scale-leave-to { transform: scale(.95); opacity: 0; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased">
 
-<div id="app" class="h-screen overflow-hidden">
-    <div class="flex h-full">
-        <!-- Mobile Menu Backdrop -->
-        <div v-if="isSidebarVisibleMobile" @click="toggleMobileSidebar" class="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"></div>
-        
-        <!-- Sidebar -->
-        <aside 
-            class="absolute md:relative z-30 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col transition-all duration-300"
-            :class="{
-                'w-64': !isSidebarCollapsed, 
-                'w-20': isSidebarCollapsed,
-                'translate-x-0': isSidebarVisibleMobile, 
-                '-translate-x-full': !isSidebarVisibleMobile,
-                'md:translate-x-0': true
-            }">
-            
-            <div class="h-16 flex items-center justify-between px-4 border-b border-slate-200 flex-shrink-0">
-                <h1 class="text-xl font-bold text-slate-900 overflow-hidden" :class="{'md:opacity-0': isSidebarCollapsed}">Kinerja App</h1>
-                <button @click="toggleSidebar" class="w-10 h-10 hidden md:flex items-center justify-center rounded-lg hover:bg-slate-100">
-                    <i class="fa-solid text-slate-600" :class="isSidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
-                </button>
+<div id="app" class="flex h-screen overflow-hidden" v-cloak>
+    
+    <!-- Sidebar -->
+    <aside id="sidebar" class="absolute md:relative z-30 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col transition-all duration-300"
+        :class="{ 'w-64': !isSidebarCollapsed, 'w-20': isSidebarCollapsed, '-translate-x-full': !isSidebarVisible, 'translate-x-0': isSidebarVisible, 'md:translate-x-0': true }">
+        <div class="h-16 flex items-center justify-between px-4 border-b border-slate-200">
+            <h1 class="text-xl font-bold text-slate-900 transition-opacity" :class="{'opacity-0': isSidebarCollapsed}">fsOS v.Vue</h1>
+            <button @click="isSidebarCollapsed = !isSidebarCollapsed" class="w-10 h-10 hidden md:flex items-center justify-center rounded-lg hover:bg-slate-100">
+                <i class="fa-solid text-slate-600" :class="isSidebarCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+            </button>
+        </div>
+        <nav class="flex-1 p-2 space-y-2">
+            <a href="#" @click.prevent="currentPage = 'kinerja'" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg" :class="{'active': currentPage === 'kinerja'}">
+                <i class="fa-solid fa-desktop w-5 h-5 mr-3 text-center"></i>
+                <span class="transition-opacity" :class="{'opacity-0': isSidebarCollapsed}">Kinerja</span>
+            </a>
+            <a href="#" @click.prevent="clearCacheAndReload" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg">
+                <i class="fa-solid fa-broom w-5 h-5 mr-3 text-center"></i>
+                <span class="transition-opacity" :class="{'opacity-0': isSidebarCollapsed}">Clear Cache</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col relative">
+        <header class="h-16 flex md:hidden items-center justify-between px-4 bg-white border-b border-slate-200">
+            <button @click="isSidebarVisible = true" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-100">
+                <i class="fa-solid fa-bars text-slate-600"></i>
+            </button>
+            <h1 class="text-lg font-bold text-slate-900">fsOS</h1>
+            <div class="w-10"></div>
+        </header>
+
+        <main class="flex-1 p-2 md:p-6 overflow-y-auto">
+            <!-- Loading State -->
+            <div v-if="isLoading" class="w-full text-center p-10">
+                <i class="fas fa-spinner fa-spin fa-3x text-indigo-500"></i>
+                <p class="mt-4 text-gray-600">{{ loadingMessage }}</p>
             </div>
-            
-            <nav class="flex-1 p-4 space-y-2">
-                <a href="#" @click.prevent="changePage('kinerja')" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-100" :class="{'active': currentPage === 'kinerja'}">
-                    <i class="fa-solid fa-desktop w-5 h-5 mr-3 text-center flex-shrink-0"></i>
-                    <span class="nav-text" :class="{'opacity-0': isSidebarCollapsed}">Kinerja</span>
-                </a>
-                 <a href="#" @click.prevent="changePage('dashboard')" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-100" :class="{'active': currentPage === 'dashboard'}">
-                    <i class="fa-solid fa-chart-pie w-5 h-5 mr-3 text-center flex-shrink-0"></i>
-                    <span class="nav-text" :class="{'opacity-0': isSidebarCollapsed}">Dashboard</span>
-                </a>
-            </nav>
-        </aside>
-        
-        <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col relative">
-            <!-- Top Header for Mobile -->
-            <header class="h-16 flex md:hidden items-center justify-between px-4 bg-white border-b border-slate-200">
-                <button @click="toggleMobileSidebar" class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-100">
-                    <i class="fa-solid fa-bars text-slate-600"></i>
-                </button>
-                <h1 class="text-lg font-bold text-slate-900">Kinerja App</h1>
-                <div class="w-10"></div> <!-- Spacer -->
-            </header>
-            
-            <main class="flex-1 p-4 md:p-6 overflow-y-auto">
-                <!-- === KINERJA PAGE === -->
-                <div v-if="currentPage === 'kinerja'">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Riwayat Aktivitas</h2>
+
+            <!-- Kinerja Cards -->
+            <div v-else-if="records.length > 0" class="masonry-container">
+                <div v-for="record in sortedRecords" :key="record['ID Kinerja']" @click="showEditModal(record)"
+                     class="masonry-item group relative border rounded-xl shadow-sm hover:shadow-lg transition-shadow p-4 flex flex-col cursor-pointer"
+                     :class="[softColors[record.Warna]?.bg || softColors.default.bg, softColors[record.Warna]?.border || softColors.default.border]">
                     
-                    <div v-if="isLoading" class="text-center py-10 text-slate-500">
-                        <i class="fas fa-spinner fa-spin fa-2x"></i>
-                        <p class="mt-2">Memuat data...</p>
+                    <!-- Hover Actions -->
+                    <div class="absolute top-2 right-2 flex items-center space-x-1 bg-white/70 backdrop-blur-sm p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                        <button @click.stop="copyDescription(record.Deskripsi, $event)" title="Salin Deskripsi" class="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600"><i class="fas fa-copy"></i></button>
+                        <button @click.stop="showDeleteModal(record)" title="Hapus" class="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
                     </div>
-
-                    <div v-else-if="records.length > 0" class="bg-white rounded-lg shadow overflow-hidden">
-                        <div class="overflow-x-auto">
-                             <table class="w-full text-sm text-left text-slate-500">
-                                <thead class="text-xs text-slate-700 uppercase bg-slate-50">
-                                    <tr>
-                                        <!-- Render headers dynamically -->
-                                        <th v-for="header in tableHeaders" :key="header" scope="col" class="px-6 py-3 whitespace-nowrap">{{ header }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="record in records" :key="record.rowIndex" class="bg-white border-b hover:bg-slate-50">
-                                        <td v-for="header in tableHeaders" :key="header" class="px-6 py-4 whitespace-nowrap">{{ record[header] || '-' }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                    
+                    <!-- Card Content -->
+                    <div class="flex-grow">
+                        <div class="flex items-center mb-2">
+                            <div v-if="record.Pin == 1" title="Disematkan" class="text-indigo-600 cursor-pointer mr-2"><i class="fas fa-thumbtack fa-sm"></i></div>
+                            <p class="text-xs text-slate-500">{{ record.Tanggal }}</p>
                         </div>
-                    </div>
-
-                    <div v-else class="text-center py-10 bg-white rounded-lg shadow">
-                         <p class="text-slate-500">Belum ada data. Klik tombol '+' untuk menambah.</p>
+                        <a v-if="record.Foto" :href="record.Foto" target="_blank" @click.stop class="block my-3">
+                            <img :src="'https://drive.google.com/thumbnail?id=' + extractIdFromUrl(record.Foto) + '&sz=w500'" alt="Foto Kinerja" class="rounded-md w-full object-cover">
+                        </a>
+                        <p class="text-slate-800 text-sm whitespace-pre-wrap" v-html="record.Deskripsi || '<i class=\'text-slate-400\'>Tidak ada deskripsi</i>'"></p>
                     </div>
                 </div>
-
-                <!-- === DASHBOARD PAGE === -->
-                 <div v-if="currentPage === 'dashboard'">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-4">Dashboard</h2>
-                     <div class="p-6 bg-white rounded-lg shadow">
-                        <p>Halaman dashboard. Anda bisa menambahkan ringkasan atau grafik di sini.</p>
-                     </div>
-                </div>
-            </main>
-            
-            <!-- Floating Add Button -->
-            <div v-if="currentPage === 'kinerja'" class="absolute bottom-6 right-6 md:bottom-8 md:right-8">
-                <button @click="openAddModal" title="Tambah Data Baru" class="bg-indigo-600 hover:bg-indigo-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-indigo-300">
-                    <i class="fas fa-plus fa-lg"></i>
-                </button>
             </div>
+            
+            <!-- Empty State -->
+            <div v-else class="bg-white p-6 rounded-lg shadow-sm">
+                <p>Tidak ada data. Klik tombol '+' untuk menambah data baru.</p>
+            </div>
+        </main>
+        
+        <!-- Floating Add Button -->
+        <div class="absolute bottom-6 right-6 md:bottom-8 md:right-8">
+            <button @click="showEditModal(null)" title="Tambah Data Baru" class="bg-indigo-600 hover:bg-indigo-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-transform transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+                <i class="fas fa-plus fa-lg"></i>
+            </button>
         </div>
     </div>
 
-    <!-- Add/Edit Modal -->
-    <transition name="modal">
-        <div v-if="showAddModal" class="fixed inset-0 bg-slate-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-md" @click.stop>
-                 <div class="p-6 border-b">
-                    <h3 class="text-xl font-semibold text-slate-800">Tambah Aktivitas Baru</h3>
-                 </div>
-                 <form @submit.prevent="addRecord" class="p-6 space-y-4">
-                     <div>
-                        <label for="tanggal" class="block text-sm font-medium text-slate-700 mb-1">Tanggal</label>
-                        <input id="tanggal" type="date" v-model="newRecord.tanggal" required class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                     </div>
-                      <div>
-                        <label for="aktivitas" class="block text-sm font-medium text-slate-700 mb-1">Aktivitas</label>
-                        <textarea id="aktivitas" v-model="newRecord.aktivitas" placeholder="Deskripsi Aktivitas..." required rows="4" class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
-                     </div>
-                      <div>
-                        <label for="status" class="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                        <select id="status" v-model="newRecord.status" class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                            <option>Selesai</option>
-                            <option>Dalam Proses</option>
-                            <option>Tertunda</option>
-                        </select>
-                     </div>
-                     <div class="pt-4 flex justify-end items-center gap-3">
-                        <button type="button" @click="closeAddModal" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200">Batal</button>
-                        <button type="submit" :disabled="isSubmitting" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-indigo-300 flex items-center gap-2">
-                             <i v-if="isSubmitting" class="fas fa-spinner fa-spin"></i>
-                            {{ isSubmitting ? 'Menyimpan...' : 'Simpan' }}
+    <!-- MODALS -->
+    <!-- Edit/Add Modal -->
+    <transition name="fade">
+        <div v-if="activeModal === 'edit'" @click="activeModal = null" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div @click.stop class="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[80vh]">
+                <div class="flex-1 flex flex-col p-6 overflow-y-auto">
+                    <textarea v-model="editableRecord.Deskripsi" required class="w-full h-48 resize-none focus:outline-none text-slate-800 placeholder-slate-400 text-lg mb-4" placeholder="Tulis sesuatu..."></textarea>
+                    <!-- Attachment sections will go here -->
+                </div>
+                <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between rounded-b-xl">
+                    <div class="flex items-center gap-4">
+                        <input type="date" v-model="editableRecord.formattedDate" required class="text-sm text-slate-600 focus:outline-none bg-transparent border-b-2 border-transparent focus:border-indigo-500">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" @click="activeModal = null" class="px-4 py-2 bg-slate-200 text-slate-700 text-sm rounded-md hover:bg-slate-300">Batal</button>
+                        <button @click="saveRecord" :disabled="isSaving" class="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-md hover:bg-slate-900 w-28 text-center">
+                            <i v-if="isSaving" class="fas fa-spinner fa-spin"></i>
+                            <span v-else>{{ isNewRecord ? 'Tambah' : 'Simpan' }}</span>
                         </button>
-                     </div>
-                 </form>
+                    </div>
+                </div>
             </div>
         </div>
     </transition>
+    
+    <!-- Delete Confirmation Modal -->
+    <transition name="fade">
+         <div v-if="activeModal === 'delete'" @click="activeModal = null" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+             <div @click.stop class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+                <h3 class="text-lg font-bold text-slate-800">Konfirmasi Hapus</h3>
+                <p class="text-sm text-slate-600 mt-2">Yakin ingin menghapus data ini?</p>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button @click="activeModal = null" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300">Batal</button>
+                    <button @click="confirmDelete" :disabled="isSaving" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 w-28 text-center">
+                        <i v-if="isSaving" class="fas fa-spinner fa-spin"></i>
+                        <span v-else>Ya, Hapus</span>
+                    </button>
+                </div>
+            </div>
+         </div>
+    </transition>
 </div>
 
-<!-- Load external script -->
 <script src="app.js" type="module"></script>
-
 </body>
 </html>
 
