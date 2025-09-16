@@ -108,27 +108,45 @@ function loadDashboard() {
         </div>`;
 }
 
-async function loadKinerjaData(forceRefresh = false) {
+// ==================================================
+// MODIFIKASI: Implementasi Stale-While-Revalidate untuk pemuatan data super cepat
+// ==================================================
+async function loadKinerjaData() {
     document.getElementById('add-button-container').style.display = 'block';
 
-    if (kinerjaCache && !forceRefresh) {
-        console.log("Loading data from cache.");
-        displayCards(kinerjaCache);
-    } else {
-        console.log("Cache is empty. Fetching new data.");
+    // Langkah 1: Hanya tampilkan layar loading jika cache benar-benar kosong (saat pertama kali membuka)
+    if (kinerjaCache === null) {
+        console.log("Cache kosong. Menampilkan loading dan mengambil data awal.");
         showLoading('Memuat data kinerja...');
     }
 
+    // Langkah 2: Lakukan pengambilan data terbaru di latar belakang (Revalidate)
     try {
         const response = await api.get('getSheetData');
         if (response.status === 'success') {
-            kinerjaCache = response.data; 
-            displayCards(kinerjaCache); 
+            // Langkah 3: Optimisasi, hanya render ulang jika data benar-benar berubah
+            const newDataString = JSON.stringify(response.data);
+            const oldDataString = JSON.stringify(kinerjaCache);
+
+            if (newDataString !== oldDataString) {
+                console.log("Data berubah. Memperbarui cache dan tampilan.");
+                kinerjaCache = response.data; 
+                displayCards(kinerjaCache); 
+            } else {
+                console.log("Data tidak ada perubahan. Tidak perlu render ulang.");
+            }
         } else {
-            showError(response.message);
+            // Tampilkan error hanya jika tidak ada data sama sekali di cache
+            if (kinerjaCache === null) {
+                showError(response.message);
+            }
         }
     } catch (error) {
-        showError(error);
+        // Tampilkan error hanya jika tidak ada data sama sekali di cache
+        if (kinerjaCache === null) {
+            showError(error);
+        }
+        console.error("Gagal mengambil data di latar belakang:", error);
     }
 }
 
@@ -247,9 +265,6 @@ async function togglePinStatus(idKinerja, isPinned) {
     }
 }
 
-// ==================================================
-// FUNGSI YANG HILANG KINI TELAH DIKEMBALIKAN
-// ==================================================
 function renderAttachment(type, url, idKinerja) {
     const container = document.getElementById(`${type}-attachment-container`);
     if (!container) return;
