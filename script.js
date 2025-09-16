@@ -1,5 +1,5 @@
 // !!! PENTING: Ganti dengan URL Web App Anda dari Google Apps Script !!!
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwvrvoaQ4TY4CQP7pZJ2wcV6G_nGHdaNwuzn0Zeurn6lypCyDHyV4hQfATH-bSgHEVB/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbw8bTezCtN4i0_vziu1k2TCnFKCA4y_PSuchczZnX3ddnbtUJ59B4lPnlvwyMOMC8jj/exec';
 
 // Variabel untuk Caching Data
 let kinerjaCache = null; // Akan menyimpan data dari sheet agar tidak perlu fetch berulang kali
@@ -47,7 +47,8 @@ const api = {
 document.addEventListener('DOMContentLoaded', () => {
     loadDashboard();
     document.querySelectorAll('.nav-link').forEach(link => link.addEventListener('click', (e) => handleNavigation(e, link)));
-    document.getElementById('add-data-btn').addEventListener('click', () => showEditModal(null));
+    // PERUBAHAN: Tombol tambah sekarang memanggil fungsi untuk membuat placeholder di server
+    document.getElementById('add-data-btn').addEventListener('click', handleCreateNewEntry);
     setupSidebar();
     
     document.addEventListener('click', (e) => {
@@ -281,8 +282,8 @@ async function togglePinStatus(idKinerja, isPinned) {
     }
 }
 
-// PERBAIKAN: Fungsi ini sekarang menerima flag isNew
-function renderAttachment(type, url, idKinerja, isNew) {
+// PERUBAHAN: Fungsi ini tidak lagi memerlukan flag `isNew`
+function renderAttachment(type, url, idKinerja) {
     const container = document.getElementById(`${type}-attachment-container`);
     if (!container) return;
     const columnName = type === 'photo' ? 'Foto' : 'File';
@@ -296,13 +297,8 @@ function renderAttachment(type, url, idKinerja, isNew) {
                 <span class="truncate">Lihat ${type === 'photo' ? 'Gambar' : 'File'}</span>
             </a>
         </div>`;
-    } else if (isNew) {
-        // Jika item baru, tombol dinonaktifkan
-        content = `<button type="button" disabled title="Simpan data terlebih dahulu untuk mengunggah file" class="w-full text-left p-2 text-sm text-slate-400 bg-slate-50 rounded-md cursor-not-allowed">
-            <i class="fas ${type === 'photo' ? 'fa-camera' : 'fa-upload'} mr-2"></i>Unggah ${type === 'photo' ? 'Gambar' : 'File'}
-        </button>`;
     } else {
-        // Jika item sudah ada (tidak baru), tombol aktif
+        // Tombol unggah selalu aktif di dalam modal
         content = `<button type="button" onclick="document.getElementById('upload-${type}-input').click()" class="w-full text-left p-2 text-sm text-slate-500 hover:bg-slate-100 rounded-md">
             <i class="fas ${type === 'photo' ? 'fa-camera' : 'fa-upload'} mr-2"></i>Unggah ${type === 'photo' ? 'Gambar' : 'File'}
         </button>
@@ -325,26 +321,34 @@ function renderSelectedLabels(kategoriString) {
     }
 }
 
-async function showEditModal(idKinerja) {
-    const isNew = idKinerja === null;
-    let dataToEdit = {};
-
-    if (isNew) {
-        dataToEdit = {
-            Tanggal: new Date().toISOString().split('T')[0].split('-').reverse().join('/'),
-            Warna: 'default', Deskripsi: '', Label: '', Foto: '', File: ''
-        };
-    } else {
-        dataToEdit = kinerjaCache.find(item => item['ID Kinerja'] == idKinerja);
-        if (!dataToEdit) {
-            showError("Data tidak ditemukan di cache. Coba muat ulang halaman.");
-            return;
+// PERUBAHAN BARU: Fungsi ini menangani pembuatan entri baru
+async function handleCreateNewEntry() {
+    showLoading('Menyiapkan data baru...');
+    try {
+        const response = await api.post('createPlaceholderRow', {});
+        if (response.status === 'success' && response.data) {
+            kinerjaCache.unshift(response.data); // Tambahkan placeholder ke cache
+            // Tidak perlu render ulang di sini, biarkan modal yang terbuka menjadi fokus
+            showEditModal(response.data['ID Kinerja']); // Buka modal untuk ID baru
+        } else {
+            throw new Error(response.message || 'Gagal membuat data baru.');
         }
+    } catch (error) {
+        showError(error);
+        loadKinerjaData(); // Muat ulang data jika gagal
     }
-    
-    let finalIdKinerja = isNew ? `${Date.now()}` : idKinerja;
-    // PERBAIKAN: Variabel state untuk melacak status "baru" di dalam modal
-    let isCurrentlyNew = isNew;
+}
+
+
+async function showEditModal(idKinerja) {
+    // Logika `isNew` dihilangkan, karena kita selalu punya ID
+    const dataToEdit = kinerjaCache.find(item => item['ID Kinerja'] == idKinerja);
+    if (!dataToEdit) {
+        showError("Data tidak ditemukan di cache. Coba muat ulang halaman.");
+        // Muat ulang data jika item tidak ditemukan di cache (kasus edge)
+        loadKinerjaData(); 
+        return;
+    }
     
     document.getElementById('edit-data-modal')?.remove();
     const colorSwatchesHtml = colorPickerPalette.map(color => `<div class="color-swatch" data-color="${color.name}" style="background-color: ${color.hex}; border: 2px solid ${color.border};"></div>`).join('');
@@ -368,7 +372,7 @@ async function showEditModal(idKinerja) {
                 </div>
                 <div class="flex items-center gap-2">
                     <button type="button" id="modal-cancel-btn" class="px-4 py-2 bg-slate-200 text-slate-700 text-sm rounded-md hover:bg-slate-300">Batal</button>
-                    <button type="button" id="modal-save-btn" class="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-md hover:bg-slate-900">${isNew ? 'Tambah' : 'Simpan'}</button>
+                    <button type="button" id="modal-save-btn" class="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-md hover:bg-slate-900">Simpan</button>
                 </div>
             </div>
           </div>
@@ -379,16 +383,16 @@ async function showEditModal(idKinerja) {
     document.getElementById('form-tanggal').value = `${year}-${month}-${day}`;
     document.getElementById('form-warna').value = dataToEdit.Warna || 'default';
 
-    // PERBAIKAN: Melewatkan flag isNew ke renderAttachment
-    renderAttachment('photo', dataToEdit.Foto, finalIdKinerja, isCurrentlyNew);
-    renderAttachment('file', dataToEdit.File, finalIdKinerja, isCurrentlyNew);
+    // Tombol unggah selalu aktif
+    renderAttachment('photo', dataToEdit.Foto, idKinerja);
+    renderAttachment('file', dataToEdit.File, idKinerja);
     renderSelectedLabels(dataToEdit.Label);
 
     document.querySelectorAll('#edit-color-picker .color-swatch').forEach(swatch => {
         swatch.style.outline = (swatch.dataset.color === (dataToEdit.Warna || 'default')) ? '2px solid #0f172a' : 'none';
     });
-
-    // PERBAIKAN: Tombol simpan sekarang memanggil fungsi tunggal
+    
+    // PERUBAHAN: Logika simpan menjadi lebih sederhana, selalu update
     const handleSaveFromModal = async () => {
         const btn = document.getElementById('modal-save-btn');
         btn.disabled = true;
@@ -397,60 +401,44 @@ async function showEditModal(idKinerja) {
         const tanggalValue = document.getElementById('form-tanggal').value;
         const [year, month, day] = tanggalValue.split('-');
         
+        // Ambil data lama untuk digabungkan
+        const oldData = kinerjaCache.find(i => i['ID Kinerja'] == idKinerja) || {};
+
         let dataObject = {
-            'ID Kinerja': finalIdKinerja,
+            ...oldData, // Ambil semua data lama
+            'ID Kinerja': idKinerja,
             'Tanggal': `${day}/${month}/${year}`,
             'Deskripsi': document.getElementById('form-deskripsi').value,
             'Label': document.getElementById('form-label').value,
             'Warna': document.getElementById('form-warna').value,
-            'Foto': isCurrentlyNew ? '' : (kinerjaCache.find(i=>i['ID Kinerja'] == finalIdKinerja)?.Foto || ''),
-            'File': isCurrentlyNew ? '' : (kinerjaCache.find(i=>i['ID Kinerja'] == finalIdKinerja)?.File || '')
+            'Hari': day, // Update hari, bulan, tahun juga
+            'Bulan': `'${month}`,
+            'Tahun': year
         };
 
-        if (isCurrentlyNew) {
-            dataObject = { ...dataObject,
-                'Hari': day,
-                'Bulan': `'${month}`, 'Tahun': year, 'Pin': 0
-            };
-            kinerjaCache.unshift(dataObject);
-        } else {
-            const index = kinerjaCache.findIndex(item => item['ID Kinerja'] == finalIdKinerja);
-            if (index !== -1) {
-                kinerjaCache[index] = { ...kinerjaCache[index], ...dataObject };
-            }
+        const index = kinerjaCache.findIndex(item => item['ID Kinerja'] == idKinerja);
+        if (index !== -1) {
+            kinerjaCache[index] = dataObject;
         }
         
+        document.getElementById('edit-data-modal').remove();
         displayCards(kinerjaCache);
 
         try {
-            const action = isCurrentlyNew ? 'addNewRow' : 'updateRowData';
-            const response = await api.post(action, dataObject);
+            const response = await api.post('updateRowData', dataObject);
             if (response.status !== 'success') throw new Error(response.message);
-            console.log("Save to server successful.");
-
-            if (isCurrentlyNew) {
-                // Jika item baru berhasil disimpan, ubah state modal
-                isCurrentlyNew = false;
-                btn.textContent = 'Simpan';
-                btn.disabled = false;
-                // Aktifkan tombol unggah
-                renderAttachment('photo', null, finalIdKinerja, false);
-                renderAttachment('file', null, finalIdKinerja, false);
-            } else {
-                // Jika ini adalah edit, tutup modal setelah simpan
-                document.getElementById('edit-data-modal').remove();
-            }
-
+            console.log("Update to server successful.");
         } catch (error) {
             showError(error);
-            btn.disabled = false;
-            btn.textContent = isCurrentlyNew ? 'Tambah' : 'Simpan';
-            // Rollback optimistic update if server fails
             loadKinerjaData(true); 
         }
     };
 
-    document.getElementById('modal-cancel-btn').onclick = () => document.getElementById('edit-data-modal').remove();
+    document.getElementById('modal-cancel-btn').onclick = () => {
+        document.getElementById('edit-data-modal').remove();
+        // Muat ulang data untuk menghapus placeholder yang tidak jadi dibuat/diedit
+        loadKinerjaData(true);
+    };
     document.getElementById('modal-save-btn').onclick = handleSaveFromModal;
     document.getElementById('edit-open-label-modal-btn').onclick = () => showLabelModal();
     document.getElementById('edit-color-picker').onclick = (e) => {
@@ -461,10 +449,6 @@ async function showEditModal(idKinerja) {
         }
     };
 }
-
-
-// FUNGSI INI SEKARANG DIGANTIKAN OLEH LOGIKA DI DALAM showEditModal
-// async function handleSaveKinerja(isNew, idKinerja) { ... }
 
 function showDeleteConfirmation(idKinerja) {
     document.getElementById('delete-modal')?.remove();
@@ -511,13 +495,12 @@ function handleFileUpload(inputElement, idKinerja, columnName) {
                 if(columnName === 'Foto') itemInCache.Foto = response.viewerUrl;
                 if(columnName === 'File') itemInCache.File = response.viewerUrl;
             }
-            renderAttachment(columnName === 'Foto' ? 'photo' : 'file', response.viewerUrl, idKinerja, false); // Setelah upload, item tidak lagi baru
+            renderAttachment(columnName === 'Foto' ? 'photo' : 'file', response.viewerUrl, idKinerja); 
             displayCards(kinerjaCache);
 
         } catch (err) {
             container.innerHTML = `<span class="text-red-600 font-bold text-sm p-2">Gagal: ${err.message}</span>`;
-            // Jika gagal, tampilkan kembali tombol upload yang aktif
-            renderAttachment(columnName === 'Foto' ? 'photo' : 'file', null, idKinerja, false);
+            renderAttachment(columnName === 'Foto' ? 'photo' : 'file', null, idKinerja);
         }
     };
     reader.readAsDataURL(file);
