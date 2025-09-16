@@ -3,7 +3,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfwuHgSGTW9d8blseHv5_p
 
 // Variabel untuk Caching Data
 let kinerjaCache = null; // Akan menyimpan data dari sheet agar tidak perlu fetch berulang kali
-let labelCache = null;   // PENAMBAHAN BARU: Cache untuk menyimpan daftar label
+let labelCache = null;   // Cache untuk menyimpan daftar label
 
 const softColors = {
   'default': { bg: 'bg-white', border: 'border-slate-200' },
@@ -109,9 +109,8 @@ function loadDashboard() {
         </div>`;
 }
 
-// PENAMBAHAN BARU: Fungsi untuk memuat label di latar belakang
 async function loadLabelsInBackground() {
-    if (labelCache !== null) return; // Jangan muat ulang jika sudah ada
+    if (labelCache !== null) return; 
     try {
         const response = await api.get('getLabels');
         if (response.status === 'success') {
@@ -141,8 +140,6 @@ async function loadKinerjaData() {
                 console.log("Data berubah. Memperbarui cache dan tampilan.");
                 kinerjaCache = response.data; 
                 displayCards(kinerjaCache); 
-                
-                // MODIFIKASI: Panggil pemuatan label setelah data kinerja berhasil dimuat pertama kali
                 loadLabelsInBackground();
             } else {
                 console.log("Data tidak ada perubahan. Tidak perlu render ulang.");
@@ -298,6 +295,21 @@ function renderAttachment(type, url, idKinerja) {
     container.innerHTML = content;
 }
 
+// PENAMBAHAN BARU: Fungsi untuk menampilkan label terpilih sebagai badge
+function renderSelectedLabels(kategoriString) {
+    const container = document.getElementById('selected-labels-container');
+    if (!container) return;
+    container.innerHTML = '';
+    if (kategoriString && kategoriString.trim() !== '') {
+        const labels = kategoriString.split(',').map(l => l.trim());
+        labels.forEach(label => {
+            if(label) {
+                container.innerHTML += `<span class="bg-slate-200 text-slate-700 text-xs font-semibold px-2.5 py-1 rounded-full">${label}</span>`;
+            }
+        });
+    }
+}
+
 async function showEditModal(idKinerja) {
     const isNew = idKinerja === null;
     let dataToEdit = {};
@@ -315,7 +327,8 @@ async function showEditModal(idKinerja) {
         }
     }
     
-    const finalIdKinerja = isNew ? `KIN-${Date.now()}` : idKinerja;
+    // PERBAIKAN: Menghilangkan prefix "KIN-" dari ID
+    const finalIdKinerja = isNew ? `${Date.now()}` : idKinerja;
     
     document.getElementById('edit-data-modal')?.remove();
     const colorSwatchesHtml = colorPickerPalette.map(color => `<div class="color-swatch" data-color="${color.name}" style="background-color: ${color.hex}; border: 2px solid ${color.border};"></div>`).join('');
@@ -325,6 +338,8 @@ async function showEditModal(idKinerja) {
             <div id="modal-content-area" class="flex-1 p-6 overflow-y-auto">
                 <textarea id="form-deskripsi" required class="w-full h-48 resize-none focus:outline-none text-slate-800 placeholder-slate-400 text-lg mb-4" placeholder="Tulis sesuatu...">${dataToEdit.Deskripsi || ''}</textarea>
                 <input type="hidden" id="form-kategori" value="${dataToEdit.Kategori || ''}">
+                <!-- PENAMBAHAN BARU: Container untuk menampilkan badge label -->
+                <div id="selected-labels-container" class="flex flex-wrap gap-2 mb-4"></div>
                 <div class="space-y-3">
                     <div id="photo-attachment-container"></div>
                     <div id="file-attachment-container"></div>
@@ -351,6 +366,8 @@ async function showEditModal(idKinerja) {
 
     renderAttachment('photo', dataToEdit.Foto, finalIdKinerja);
     renderAttachment('file', dataToEdit.File, finalIdKinerja);
+    // PENAMBAHAN BARU: Panggil fungsi untuk merender label yang sudah ada
+    renderSelectedLabels(dataToEdit.Kategori);
 
     document.querySelectorAll('#edit-color-picker .color-swatch').forEach(swatch => {
         swatch.style.outline = (swatch.dataset.color === (dataToEdit.Warna || 'default')) ? '2px solid #0f172a' : 'none';
@@ -388,9 +405,7 @@ async function handleSaveKinerja(isNew, idKinerja) {
     };
 
     if (isNew) {
-        const tgl = new Date(tanggalValue + 'T00:00:00');
         dataObject = { ...dataObject,
-            // PERBAIKAN: Menggunakan angka tanggal (day) bukan nama hari
             'Hari': day,
             'Bulan': `'${month}`, 'Tahun': year, 'Pin': 0
         };
@@ -471,7 +486,6 @@ function handleFileUpload(inputElement, idKinerja, columnName) {
     reader.readAsDataURL(file);
 }
 
-// MODIFIKASI: Fungsi showLabelModal dioptimalkan untuk menggunakan cache
 async function showLabelModal() {
     document.getElementById('label-select-modal')?.remove();
     const modalHtml = `<div id="label-select-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[60] p-4"><div class="bg-white rounded-lg shadow-xl w-full max-w-xs animate-scale-in flex flex-col"><div class="p-3 border-b border-slate-200"><input type="text" id="label-search-input" placeholder="Cari atau tambah..." class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"></div><div id="label-list-container" class="p-2 flex-1 overflow-y-auto max-h-60"><div class="text-center p-4"><i class="fas fa-spinner fa-spin text-indigo-500"></i></div></div><div class="p-3 bg-slate-50 border-t text-right rounded-b-lg"><button id="apply-label-btn" class="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-md hover:bg-slate-900">Terapkan</button></div></div></div>`;
@@ -482,10 +496,8 @@ async function showLabelModal() {
     const kategoriInput = document.getElementById('form-kategori');
     let selectedLabels = (kategoriInput.value || '').split(',').map(l => l.trim()).filter(Boolean);
     
-    // Jika labelCache belum ada, panggil fungsinya. Biasanya ini tidak terjadi karena sudah dipanggil di background.
     if (labelCache === null) await loadLabelsInBackground();
     
-    // Gunakan data dari cache, bukan fetch baru
     const allLabels = labelCache || []; 
 
     const render = (filter = '') => {
@@ -503,10 +515,9 @@ async function showLabelModal() {
     listContainer.onclick = (e) => {
         if (e.target.closest('.add-new-label')) {
             const newLabel = searchInput.value.trim();
-            // PERBAIKAN: Tambahkan label baru ke allLabels (dan juga ke cache) agar persisten dalam sesi
             if (newLabel && !allLabels.includes(newLabel)) {
                 allLabels.push(newLabel);
-                labelCache.push(newLabel); // Sinkronkan dengan cache utama
+                labelCache.push(newLabel); 
             }
             if (newLabel && !selectedLabels.includes(newLabel)) selectedLabels.push(newLabel);
             searchInput.value = '';
@@ -527,7 +538,10 @@ async function showLabelModal() {
 
     searchInput.oninput = () => render(searchInput.value);
     document.getElementById('apply-label-btn').onclick = () => {
-        kategoriInput.value = selectedLabels.join(', ');
+        const newKategoriString = selectedLabels.join(', ');
+        kategoriInput.value = newKategoriString;
+        // PERBAIKAN: Panggil renderSelectedLabels untuk update UI di modal utama
+        renderSelectedLabels(newKategoriString);
         document.getElementById('label-select-modal').remove();
     };
     render();
