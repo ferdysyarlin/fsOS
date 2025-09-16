@@ -295,7 +295,6 @@ function renderAttachment(type, url, idKinerja) {
     container.innerHTML = content;
 }
 
-// PENAMBAHAN BARU: Fungsi untuk menampilkan label terpilih sebagai badge
 function renderSelectedLabels(kategoriString) {
     const container = document.getElementById('selected-labels-container');
     if (!container) return;
@@ -317,7 +316,7 @@ async function showEditModal(idKinerja) {
     if (isNew) {
         dataToEdit = {
             Tanggal: new Date().toISOString().split('T')[0].split('-').reverse().join('/'),
-            Warna: 'default', Deskripsi: '', Kategori: '', Foto: '', File: ''
+            Warna: 'default', Deskripsi: '', Label: '', Foto: '', File: ''
         };
     } else {
         dataToEdit = kinerjaCache.find(item => item['ID Kinerja'] === idKinerja);
@@ -327,7 +326,6 @@ async function showEditModal(idKinerja) {
         }
     }
     
-    // PERBAIKAN: Menghilangkan prefix "KIN-" dari ID
     const finalIdKinerja = isNew ? `${Date.now()}` : idKinerja;
     
     document.getElementById('edit-data-modal')?.remove();
@@ -337,8 +335,8 @@ async function showEditModal(idKinerja) {
           <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl animate-scale-in flex flex-col max-h-[90vh]">
             <div id="modal-content-area" class="flex-1 p-6 overflow-y-auto">
                 <textarea id="form-deskripsi" required class="w-full h-48 resize-none focus:outline-none text-slate-800 placeholder-slate-400 text-lg mb-4" placeholder="Tulis sesuatu...">${dataToEdit.Deskripsi || ''}</textarea>
-                <input type="hidden" id="form-kategori" value="${dataToEdit.Kategori || ''}">
-                <!-- PENAMBAHAN BARU: Container untuk menampilkan badge label -->
+                <!-- PERBAIKAN: Mengganti id dari form-kategori ke form-label -->
+                <input type="hidden" id="form-label" value="${dataToEdit.Label || ''}">
                 <div id="selected-labels-container" class="flex flex-wrap gap-2 mb-4"></div>
                 <div class="space-y-3">
                     <div id="photo-attachment-container"></div>
@@ -366,8 +364,8 @@ async function showEditModal(idKinerja) {
 
     renderAttachment('photo', dataToEdit.Foto, finalIdKinerja);
     renderAttachment('file', dataToEdit.File, finalIdKinerja);
-    // PENAMBAHAN BARU: Panggil fungsi untuk merender label yang sudah ada
-    renderSelectedLabels(dataToEdit.Kategori);
+    // PERBAIKAN: Membaca dari properti Label
+    renderSelectedLabels(dataToEdit.Label);
 
     document.querySelectorAll('#edit-color-picker .color-swatch').forEach(swatch => {
         swatch.style.outline = (swatch.dataset.color === (dataToEdit.Warna || 'default')) ? '2px solid #0f172a' : 'none';
@@ -398,7 +396,8 @@ async function handleSaveKinerja(isNew, idKinerja) {
         'ID Kinerja': idKinerja,
         'Tanggal': `${day}/${month}/${year}`,
         'Deskripsi': document.getElementById('form-deskripsi').value,
-        'Kategori': document.getElementById('form-kategori').value,
+        // PERBAIKAN: Mengirim data dengan kunci 'Label'
+        'Label': document.getElementById('form-label').value,
         'Warna': document.getElementById('form-warna').value,
         'Foto': isNew ? '' : (kinerjaCache.find(i=>i['ID Kinerja'] === idKinerja)?.Foto || ''),
         'File': isNew ? '' : (kinerjaCache.find(i=>i['ID Kinerja'] === idKinerja)?.File || '')
@@ -493,8 +492,9 @@ async function showLabelModal() {
 
     const listContainer = document.getElementById('label-list-container');
     const searchInput = document.getElementById('label-search-input');
-    const kategoriInput = document.getElementById('form-kategori');
-    let selectedLabels = (kategoriInput.value || '').split(',').map(l => l.trim()).filter(Boolean);
+    // PERBAIKAN: Mengambil elemen input label yang benar
+    const labelInput = document.getElementById('form-label');
+    let selectedLabels = (labelInput.value || '').split(',').map(l => l.trim()).filter(Boolean);
     
     if (labelCache === null) await loadLabelsInBackground();
     
@@ -539,8 +539,7 @@ async function showLabelModal() {
     searchInput.oninput = () => render(searchInput.value);
     document.getElementById('apply-label-btn').onclick = () => {
         const newKategoriString = selectedLabels.join(', ');
-        kategoriInput.value = newKategoriString;
-        // PERBAIKAN: Panggil renderSelectedLabels untuk update UI di modal utama
+        labelInput.value = newKategoriString;
         renderSelectedLabels(newKategoriString);
         document.getElementById('label-select-modal').remove();
     };
