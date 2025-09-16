@@ -1,0 +1,21 @@
+/* Custom Scrollbar Styling */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #f1f5f9; } /* slate-100 */
+::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; } /* slate-400 */
+::-webkit-scrollbar-thumb:hover { background: #64748b; } /* slate-500 */
+
+/* Animasi sederhana */
+@keyframes scale-in {
+  0% {
+    transform: scale(.95);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in .2s ease-out forwards;
+}
