@@ -2,6 +2,11 @@ const { createApp, ref, onMounted, computed, watch } = Vue;
 
 const app = createApp({
     setup() {
+        // --- KONFIGURASI PENTING ---
+        // >> PASTE URL WEB APP GOOGLE SCRIPT ANDA DI SINI <<
+        const gasUrl = ref('https://script.google.com/macros/s/AKfycbw2U7fLACQOWD6aP0CGeq_QjYmDFykt1pRKkmGoVCO7X7JBue40Z_B2F12gsWMBiBKfHw/exec');
+        // --------------------------
+
         // --- Reactive State ---
         const isLoading = ref(true);
         const loadingMessage = ref('Memuat data kinerja...');
@@ -32,20 +37,35 @@ const app = createApp({
         });
 
         // --- Methods ---
-        const runGoogleScript = (functionName, ...args) => {
-            return new Promise((resolve, reject) => {
-                google.script.run
-                    .withSuccessHandler(resolve)
-                    .withFailureHandler(reject)
-                    [functionName](...args);
+        // Helper baru untuk berkomunikasi dengan GAS melalui fetch
+        const runGoogleScript = async (functionName, args) => {
+             const response = await fetch(gasUrl.value, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ functionName, args })
             });
+            
+            const result = await response.json();
+
+            if (result.status === 'error') {
+                throw new Error(result.message);
+            }
+            return result.data;
         };
 
         const fetchRecords = async () => {
+            if (!gasUrl.value || gasUrl.value.includes('GANTI_DENGAN')) {
+                alert('URL Google Apps Script belum diatur di file app.js!');
+                isLoading.value = false;
+                return;
+            }
             isLoading.value = true;
             loadingMessage.value = 'Memuat data kinerja...';
             try {
-                const dataArray = await runGoogleScript('getSheetData');
+                // GET request untuk mengambil semua data awal
+                const response = await fetch(gasUrl.value);
+                const dataArray = await response.json();
+
                 if (dataArray && dataArray.length > 1) {
                     const headers = dataArray[0];
                     records.value = dataArray.slice(1).map(row => {
@@ -68,12 +88,10 @@ const app = createApp({
         
         const showEditModal = (record) => {
             if (record) {
-                // Editing existing record
                 const [day, month, year] = record.Tanggal ? record.Tanggal.split('/') : [null, null, null];
                 const formattedDate = record.Tanggal ? `${year}-${month}-${day}` : '';
                 editableRecord.value = { ...record, formattedDate };
             } else {
-                // Adding new record
                 editableRecord.value = {
                     Deskripsi: '',
                     Tanggal: new Date().toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'}),
@@ -91,26 +109,26 @@ const app = createApp({
                 const recordToSave = { ...editableRecord.value };
                 const [year, month, day] = recordToSave.formattedDate.split('-');
                 recordToSave.Tanggal = `${day}/${month}/${year}`;
+                
+                const originalFormattedDate = recordToSave.formattedDate; // Simpan untuk nanti
                 delete recordToSave.formattedDate;
 
                 if (isNewRecord.value) {
-                    // Add new record logic
                     recordToSave['ID Kinerja'] = Date.now();
-                    const tanggalObj = new Date(recordToSave.formattedDate + 'T00:00:00');
+                    const tanggalObj = new Date(originalFormattedDate + 'T00:00:00');
                     recordToSave.Hari = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][tanggalObj.getDay()];
                     recordToSave.Bulan = `'${String(tanggalObj.getMonth() + 1).padStart(2, '0')}`;
                     recordToSave.Tahun = tanggalObj.getFullYear();
                     
-                    await runGoogleScript('addNewRow', recordToSave);
+                    await runGoogleScript('addNewRow', [recordToSave]);
                 } else {
-                    // Update existing record logic
-                    await runGoogleScript('updateRowData', recordToSave);
+                    await runGoogleScript('updateRowData', [recordToSave]);
                 }
                 activeModal.value = null;
                 await fetchRecords();
             } catch (error) {
                 console.error("Failed to save record:", error);
-                alert("Gagal menyimpan data.");
+                alert("Gagal menyimpan data: " + error.message);
             } finally {
                 isSaving.value = false;
             }
@@ -125,13 +143,12 @@ const app = createApp({
             if (!recordToDelete.value) return;
             isSaving.value = true;
             try {
-                await runGoogleScript('deleteRow', recordToDelete.value['ID Kinerja']);
+                await runGoogleScript('deleteRow', [recordToDelete.value['ID Kinerja']]);
                 activeModal.value = null;
-                // Remove from local array for instant UI update
                 records.value = records.value.filter(r => r['ID Kinerja'] !== recordToDelete.value['ID Kinerja']);
             } catch (error) {
                 console.error("Failed to delete record:", error);
-                alert("Gagal menghapus data.");
+                alert("Gagal menghapus data: " + error.message);
             } finally {
                 isSaving.value = false;
                 recordToDelete.value = null;
@@ -159,14 +176,10 @@ const app = createApp({
             return match ? match[0] : null;
         };
 
-
-        // --- Lifecycle Hooks ---
         onMounted(() => {
             fetchRecords();
         });
         
-        // --- Watchers ---
-        // Hide mobile sidebar when navigating
         watch(currentPage, () => {
              if (isSidebarVisible.value) {
                  isSidebarVisible.value = false;
