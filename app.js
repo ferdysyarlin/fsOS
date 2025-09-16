@@ -4,7 +4,7 @@ const app = createApp({
     setup() {
         // --- KONFIGURASI PENTING ---
         // >> PASTE URL WEB APP GOOGLE SCRIPT ANDA DI SINI <<
-        const gasUrl = ref('https://script.google.com/macros/s/AKfycbx3cQGX7hd5ivKotlt80Kkwry6ilo8JiW-B-D8e3ehuNImmcCfPGg5VohNqyQpfPHQGRA/exec');
+        const gasUrl = ref('https://script.google.com/macros/s/AKfycbxh6iLP507vtMpdm4uO2B2tM5fW5N5P7MFiYv_9pGj-Im53Ki_dO42qDIDsb-LsvDNGFg/exec');
         // --------------------------
 
         // --- Reactive State ---
