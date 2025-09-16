@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>CORS Test</title>
+    <style>
+        body { font-family: sans-serif; padding: 2em; line-height: 1.6; }
+        #status { padding: 1em; border-radius: 8px; margin-top: 1em; font-weight: bold; }
+        .success { background-color: #e0fbe0; border: 1px solid #3c9c3c; color: #225a22; }
+        .error { background-color: #fbe0e0; border: 1px solid #c93c3c; color: #7b2424; }
+    </style>
+</head>
+<body>
+
+    <h1>Alat Uji Coba Koneksi Google Apps Script (CORS)</h1>
+    <p>Masukkan URL Aplikasi Web Google Apps Script Anda di bawah ini dan klik tombol untuk menguji koneksi.</p>
+
+    <input type="text" id="gasUrl" placeholder="Tempel URL GAS Anda di sini..." style="width: 100%; padding: 0.5em; font-size: 1em; margin-bottom: 1em;">
+    <button id="testButton" style="padding: 0.7em 1.5em; font-size: 1em; cursor: pointer;">Uji Koneksi</button>
+
+    <div id="status">Menunggu pengujian...</div>
+    <pre id="result" style="background-color: #f4f4f4; padding: 1em; border-radius: 8px; margin-top: 1em; white-space: pre-wrap; word-wrap: break-word;"></pre>
+
+    <script>
+        const testButton = document.getElementById('testButton');
+        const gasUrlInput = document.getElementById('gasUrl');
+        const statusDiv = document.getElementById('status');
+        const resultDiv = document.getElementById('result');
+
+        testButton.addEventListener('click', async () => {
+            const url = gasUrlInput.value.trim();
+            if (!url) {
+                alert('Harap masukkan URL Google Apps Script!');
+                return;
+            }
+
+            statusDiv.textContent = 'Menguji...';
+            statusDiv.className = '';
+            resultDiv.textContent = '';
+
+            try {
+                const response = await fetch(url);
+                
+                // Cek jika response tidak OK (misal: 404, 500)
+                if (!response.ok) {
+                    throw new Error(`Server merespons dengan status error: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+
+                // SUKSES
+                statusDiv.textContent = 'Sukses! Koneksi berhasil.';
+                statusDiv.className = 'success';
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+
+            } catch (error) {
+                // GAGAL
+                console.error('Detail Error:', error);
+                statusDiv.textContent = 'Gagal! Terjadi kesalahan CORS atau Network Error.';
+                statusDiv.className = 'error';
+                resultDiv.textContent = `Pesan Error: ${error.message}\n\nIni kemungkinan besar adalah masalah CORS. Pastikan Anda telah menerapkan (deploy) skrip sebagai "Versi baru" dan izin akses diatur ke "Siapa saja".`;
+            }
+        });
+    </script>
+
+</body>
+</html>
