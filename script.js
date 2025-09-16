@@ -3,6 +3,7 @@ const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfwuHgSGTW9d8blseHv5_p
 
 // Variabel untuk Caching Data
 let kinerjaCache = null; // Akan menyimpan data dari sheet agar tidak perlu fetch berulang kali
+let labelCache = null;   // PENAMBAHAN BARU: Cache untuk menyimpan daftar label
 
 const softColors = {
   'default': { bg: 'bg-white', border: 'border-slate-200' },
@@ -108,23 +109,31 @@ function loadDashboard() {
         </div>`;
 }
 
-// ==================================================
-// MODIFIKASI: Implementasi Stale-While-Revalidate untuk pemuatan data super cepat
-// ==================================================
+// PENAMBAHAN BARU: Fungsi untuk memuat label di latar belakang
+async function loadLabelsInBackground() {
+    if (labelCache !== null) return; // Jangan muat ulang jika sudah ada
+    try {
+        const response = await api.get('getLabels');
+        if (response.status === 'success') {
+            labelCache = response.data;
+            console.log("Labels loaded and cached successfully.");
+        }
+    } catch (error) {
+        console.error("Failed to load labels in background:", error);
+    }
+}
+
 async function loadKinerjaData() {
     document.getElementById('add-button-container').style.display = 'block';
 
-    // Langkah 1: Hanya tampilkan layar loading jika cache benar-benar kosong (saat pertama kali membuka)
     if (kinerjaCache === null) {
         console.log("Cache kosong. Menampilkan loading dan mengambil data awal.");
         showLoading('Memuat data kinerja...');
     }
 
-    // Langkah 2: Lakukan pengambilan data terbaru di latar belakang (Revalidate)
     try {
         const response = await api.get('getSheetData');
         if (response.status === 'success') {
-            // Langkah 3: Optimisasi, hanya render ulang jika data benar-benar berubah
             const newDataString = JSON.stringify(response.data);
             const oldDataString = JSON.stringify(kinerjaCache);
 
@@ -132,17 +141,18 @@ async function loadKinerjaData() {
                 console.log("Data berubah. Memperbarui cache dan tampilan.");
                 kinerjaCache = response.data; 
                 displayCards(kinerjaCache); 
+                
+                // MODIFIKASI: Panggil pemuatan label setelah data kinerja berhasil dimuat pertama kali
+                loadLabelsInBackground();
             } else {
                 console.log("Data tidak ada perubahan. Tidak perlu render ulang.");
             }
         } else {
-            // Tampilkan error hanya jika tidak ada data sama sekali di cache
             if (kinerjaCache === null) {
                 showError(response.message);
             }
         }
     } catch (error) {
-        // Tampilkan error hanya jika tidak ada data sama sekali di cache
         if (kinerjaCache === null) {
             showError(error);
         }
@@ -292,7 +302,6 @@ async function showEditModal(idKinerja) {
     const isNew = idKinerja === null;
     let dataToEdit = {};
 
-    // Ambil data dari cache jika memungkinkan
     if (isNew) {
         dataToEdit = {
             Tanggal: new Date().toISOString().split('T')[0].split('-').reverse().join('/'),
@@ -381,7 +390,8 @@ async function handleSaveKinerja(isNew, idKinerja) {
     if (isNew) {
         const tgl = new Date(tanggalValue + 'T00:00:00');
         dataObject = { ...dataObject,
-            'Hari': ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][tgl.getDay()],
+            // PERBAIKAN: Menggunakan angka tanggal (day) bukan nama hari
+            'Hari': day,
             'Bulan': `'${month}`, 'Tahun': year, 'Pin': 0
         };
         kinerjaCache.unshift(dataObject);
@@ -461,6 +471,7 @@ function handleFileUpload(inputElement, idKinerja, columnName) {
     reader.readAsDataURL(file);
 }
 
+// MODIFIKASI: Fungsi showLabelModal dioptimalkan untuk menggunakan cache
 async function showLabelModal() {
     document.getElementById('label-select-modal')?.remove();
     const modalHtml = `<div id="label-select-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[60] p-4"><div class="bg-white rounded-lg shadow-xl w-full max-w-xs animate-scale-in flex flex-col"><div class="p-3 border-b border-slate-200"><input type="text" id="label-search-input" placeholder="Cari atau tambah..." class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"></div><div id="label-list-container" class="p-2 flex-1 overflow-y-auto max-h-60"><div class="text-center p-4"><i class="fas fa-spinner fa-spin text-indigo-500"></i></div></div><div class="p-3 bg-slate-50 border-t text-right rounded-b-lg"><button id="apply-label-btn" class="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-md hover:bg-slate-900">Terapkan</button></div></div></div>`;
@@ -471,53 +482,55 @@ async function showLabelModal() {
     const kategoriInput = document.getElementById('form-kategori');
     let selectedLabels = (kategoriInput.value || '').split(',').map(l => l.trim()).filter(Boolean);
     
-    try {
-        const response = await api.get('getLabels');
-        if (response.status !== 'success') throw new Error(response.message);
-        
-        const allLabels = response.data;
-        const render = (filter = '') => {
-            listContainer.innerHTML = '';
-            const filtered = allLabels.filter(l => l.toLowerCase().includes(filter.toLowerCase()));
-            filtered.forEach(label => {
-                const isChecked = selectedLabels.includes(label);
-                listContainer.innerHTML += `<label class="flex items-center p-2 rounded-md hover:bg-slate-100 cursor-pointer"><input type="checkbox" data-label="${label}" class="h-4 w-4 rounded border-gray-300" ${isChecked ? 'checked' : ''}><span class="ml-3 text-sm">${label}</span></label>`;
-            });
-            if (filter && !allLabels.some(l => l.toLowerCase() === filter.toLowerCase())) {
-                listContainer.insertAdjacentHTML('afterbegin', `<div class="p-2 text-sm text-indigo-600 rounded-md hover:bg-indigo-50 cursor-pointer font-semibold add-new-label"><i class="fas fa-plus fa-xs mr-2"></i> Tambah "${filter}"</div>`);
-            }
-        };
-        
-        listContainer.onclick = (e) => {
-            if (e.target.closest('.add-new-label')) {
-                const newLabel = searchInput.value.trim();
-                if (newLabel && !allLabels.includes(newLabel)) allLabels.push(newLabel);
-                if (newLabel && !selectedLabels.includes(newLabel)) selectedLabels.push(newLabel);
-                searchInput.value = '';
-                render();
-            }
-        };
-        
-        listContainer.onchange = (e) => {
-            if (e.target.type === 'checkbox') {
-                const label = e.target.dataset.label;
-                if (e.target.checked) {
-                    if (!selectedLabels.includes(label)) selectedLabels.push(label);
-                } else {
-                    selectedLabels = selectedLabels.filter(l => l !== label);
-                }
-            }
-        };
+    // Jika labelCache belum ada, panggil fungsinya. Biasanya ini tidak terjadi karena sudah dipanggil di background.
+    if (labelCache === null) await loadLabelsInBackground();
+    
+    // Gunakan data dari cache, bukan fetch baru
+    const allLabels = labelCache || []; 
 
-        searchInput.oninput = () => render(searchInput.value);
-        document.getElementById('apply-label-btn').onclick = () => {
-            kategoriInput.value = selectedLabels.join(', ');
-            document.getElementById('label-select-modal').remove();
-        };
-        render();
-    } catch(e) {
-        listContainer.innerHTML = `<p class="p-2 text-red-600">${e.message}</p>`;
-    }
+    const render = (filter = '') => {
+        listContainer.innerHTML = '';
+        const filtered = allLabels.filter(l => l.toLowerCase().includes(filter.toLowerCase()));
+        filtered.forEach(label => {
+            const isChecked = selectedLabels.includes(label);
+            listContainer.innerHTML += `<label class="flex items-center p-2 rounded-md hover:bg-slate-100 cursor-pointer"><input type="checkbox" data-label="${label}" class="h-4 w-4 rounded border-gray-300" ${isChecked ? 'checked' : ''}><span class="ml-3 text-sm">${label}</span></label>`;
+        });
+        if (filter && !allLabels.some(l => l.toLowerCase() === filter.toLowerCase())) {
+            listContainer.insertAdjacentHTML('afterbegin', `<div class="p-2 text-sm text-indigo-600 rounded-md hover:bg-indigo-50 cursor-pointer font-semibold add-new-label"><i class="fas fa-plus fa-xs mr-2"></i> Tambah "${filter}"</div>`);
+        }
+    };
+    
+    listContainer.onclick = (e) => {
+        if (e.target.closest('.add-new-label')) {
+            const newLabel = searchInput.value.trim();
+            // PERBAIKAN: Tambahkan label baru ke allLabels (dan juga ke cache) agar persisten dalam sesi
+            if (newLabel && !allLabels.includes(newLabel)) {
+                allLabels.push(newLabel);
+                labelCache.push(newLabel); // Sinkronkan dengan cache utama
+            }
+            if (newLabel && !selectedLabels.includes(newLabel)) selectedLabels.push(newLabel);
+            searchInput.value = '';
+            render();
+        }
+    };
+    
+    listContainer.onchange = (e) => {
+        if (e.target.type === 'checkbox') {
+            const label = e.target.dataset.label;
+            if (e.target.checked) {
+                if (!selectedLabels.includes(label)) selectedLabels.push(label);
+            } else {
+                selectedLabels = selectedLabels.filter(l => l !== label);
+            }
+        }
+    };
+
+    searchInput.oninput = () => render(searchInput.value);
+    document.getElementById('apply-label-btn').onclick = () => {
+        kategoriInput.value = selectedLabels.join(', ');
+        document.getElementById('label-select-modal').remove();
+    };
+    render();
 }
 
 function extractIdFromUrl(url) {
