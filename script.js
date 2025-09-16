@@ -1,5 +1,5 @@
 // !!! PENTING: Ganti dengan URL Web App Anda dari Google Apps Script !!!
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwNQ0Pd8XMHkeeIgDuoTKz9RQqYGvPB8DrL8qtXUjmdQrsWM6sHQOaUEFLef-KhlW_p/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzr-uloYFnniOQ2Znw2U6IgnBxgStEZmXg7lypfzjNDViC7tUuxFBMXcW0pVWKRYwXc/exec';
 
 // Variabel untuk Caching Data
 let kinerjaCache = null; 
