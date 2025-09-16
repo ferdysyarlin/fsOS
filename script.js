@@ -1,7 +1,11 @@
 // !!! PENTING: Ganti dengan URL Web App Anda dari Google Apps Script !!!
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxfwuHgSGTW9d8blseHv5_p8oYXpc5bc6PR9Mt7ICI08Yh7aNFpXtGGpllQgUOciWw9/exec';
 
-// Palet Warna
+// ==================================================
+// PENAMBAHAN BARU: Variabel untuk Caching Data
+// ==================================================
+let kinerjaCache = null; // Akan menyimpan data dari sheet agar tidak perlu fetch berulang kali
+
 const softColors = {
   'default': { bg: 'bg-white', border: 'border-slate-200' },
   'yellow':  { bg: 'bg-yellow-50', border: 'border-yellow-200' },
@@ -19,11 +23,6 @@ const colorPickerPalette = [
     { name: 'pink', hex: '#FCE7F3', border: '#FBCFE8' }
 ];
 
-/**
- * ===============================================
- * API Service Layer
- * ===============================================
- */
 const api = {
     async get(action, params = {}) {
         const url = new URL(GAS_URL);
@@ -46,19 +45,12 @@ const api = {
     }
 };
 
-
-/**
- * ===============================================
- * App Setup & Event Listeners
- * ===============================================
- */
 document.addEventListener('DOMContentLoaded', () => {
     loadDashboard();
     document.querySelectorAll('.nav-link').forEach(link => link.addEventListener('click', (e) => handleNavigation(e, link)));
     document.getElementById('add-data-btn').addEventListener('click', () => showEditModal(null));
     setupSidebar();
     
-    // Listener global untuk menutup color picker
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.color-picker-popup') && !e.target.closest('.color-picker-toggle')) {
             const openPicker = document.querySelector('.color-picker-popup');
@@ -95,11 +87,6 @@ function setupSidebar() {
        });
 }
 
-/**
- * ===============================================
- * Navigation & Page Loading
- * ===============================================
- */
 function handleNavigation(event, clickedLink) {
     event.preventDefault();
     document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
@@ -123,13 +110,30 @@ function loadDashboard() {
         </div>`;
 }
 
-async function loadKinerjaData() {
-    showLoading('Memuat data kinerja...');
+// ==================================================
+// MODIFIKASI: Fungsi loadKinerjaData menjadi lebih cerdas
+// ==================================================
+async function loadKinerjaData(forceRefresh = false) {
     document.getElementById('add-button-container').style.display = 'block';
+
+    // Langkah 1: Jika cache ada dan tidak dipaksa refresh, tampilkan data dari cache secara instan.
+    if (kinerjaCache && !forceRefresh) {
+        console.log("Loading data from cache.");
+        displayCards(kinerjaCache);
+    } else {
+        // Jika tidak ada cache, tampilkan loading screen.
+        console.log("Cache is empty. Fetching new data.");
+        showLoading('Memuat data kinerja...');
+    }
+
+    // Langkah 2: Selalu coba ambil data terbaru dari server di background.
     try {
         const response = await api.get('getSheetData');
         if (response.status === 'success') {
-            displayCards(response.data);
+            // Simpan data terbaru ke cache
+            kinerjaCache = response.data; 
+            // Tampilkan data terbaru. Jika tadi load dari cache, ini akan me-refresh tampilan jika ada perubahan.
+            displayCards(kinerjaCache); 
         } else {
             showError(response.message);
         }
@@ -138,11 +142,7 @@ async function loadKinerjaData() {
     }
 }
 
-/**
- * ===============================================
- * UI & Rendering Functions
- * ===============================================
- */
+
 function showLoading(message) {
     document.getElementById('main-content').innerHTML = `<div class="w-full text-center p-10"><i class="fas fa-spinner fa-spin fa-3x text-indigo-500"></i><p class="mt-4 text-gray-600">${message}</p></div>`;
 }
@@ -160,7 +160,10 @@ function displayCards(dataRows) {
     }
     
     let contentHtml = `<div class="masonry-container">`;
-    dataRows.forEach((row) => {
+    // Urutkan data agar yang di-pin selalu di atas
+    const sortedData = [...dataRows].sort((a, b) => (b.Pin || 0) - (a.Pin || 0));
+
+    sortedData.forEach((row) => {
         const idKinerja = row['ID Kinerja'];
         const colorClasses = softColors[row.Warna] || softColors['default'];
         const isPinned = row.Pin == 1;
@@ -174,21 +177,17 @@ function displayCards(dataRows) {
         <div id="card-${idKinerja}" 
              class="masonry-item group relative ${colorClasses.bg} border ${colorClasses.border} rounded-xl shadow-sm hover:shadow-lg transition-shadow p-4 flex flex-col cursor-pointer" 
              onclick="showEditModal('${idKinerja}')">
-          
             <div class="absolute top-2 right-2 flex items-center space-x-1 bg-white/70 backdrop-blur-sm p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
                 <button onclick='event.stopPropagation(); copyDescription(${sanitizedDeskripsi}, this.querySelector("i"))' title="Salin Deskripsi" class="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600"><i class="fas fa-copy"></i></button>
                 <button onclick="event.stopPropagation(); showColorPicker(event, '${idKinerja}')" title="Ubah Warna" class="color-picker-toggle w-7 h-7 flex items-center justify-center text-slate-500 hover:text-indigo-600"><i class="fas fa-palette"></i></button>
                 ${pinButton}
                 <button onclick="event.stopPropagation(); showDeleteConfirmation('${idKinerja}')" title="Hapus" class="w-7 h-7 flex items-center justify-center text-slate-500 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
             </div>
-            
             <div class="flex items-center mb-2">
                 ${isPinned ? `<div title="Disematkan" class="text-indigo-600 mr-2"><i class="fas fa-thumbtack fa-sm"></i></div>` : ''}
                 <p class="text-xs text-slate-500">${row.Tanggal || ''}</p>
             </div>
-
             ${row.Foto ? `<a href="${row.Foto}" target="_blank" class="block my-3"><img src="https://drive.google.com/thumbnail?id=${extractIdFromUrl(row.Foto)}&sz=w500" alt="Foto Kinerja" class="rounded-md w-full object-cover"></a>` : ''}
-          
             <p class="text-slate-800 text-sm whitespace-pre-wrap">${row.Deskripsi || '<i>Tanpa Deskripsi</i>'}</p>
         </div>`;
     });
@@ -196,11 +195,6 @@ function displayCards(dataRows) {
     mainContent.innerHTML = contentHtml;
 }
 
-/**
- * ===============================================
- * Fitur Kartu (Copy, Color, Pin)
- * ===============================================
- */
 function copyDescription(text, iconElement) {
     navigator.clipboard.writeText(text).then(() => {
         const originalIconClass = iconElement.className;
@@ -231,38 +225,67 @@ async function updateCardColor(idKinerja, colorName) {
     const cardElement = document.getElementById(`card-${idKinerja}`);
     if (!cardElement) return;
 
+    // Optimistic Update: Langsung ubah warna di UI
     Object.keys(softColors).forEach(key => {
         cardElement.classList.remove(softColors[key].bg, softColors[key].border);
     });
     const newColorClasses = softColors[colorName] || softColors['default'];
     cardElement.classList.add(newColorClasses.bg, newColorClasses.border);
     
+    // Update data di cache
+    const itemInCache = kinerjaCache.find(item => item['ID Kinerja'] === idKinerja);
+    if (itemInCache) itemInCache.Warna = colorName;
+
     try {
+        // Kirim perubahan ke server di background
         await api.post('updateWarna', { idKinerja, colorName });
     } catch(e) {
         showError(e);
-        loadKinerjaData(); // Muat ulang jika gagal
+        // Jika gagal, muat ulang data dari server untuk mengembalikan ke kondisi semula
+        loadKinerjaData(true); 
     }
 }
 
 async function togglePinStatus(idKinerja, isPinned) {
-    showLoading('Memperbarui status pin...');
     const newStatus = isPinned ? 0 : 1;
+    
+    // Optimistic Update: Langsung update cache dan render ulang
+    const itemInCache = kinerjaCache.find(item => item['ID Kinerja'] === idKinerja);
+    if (itemInCache) itemInCache.Pin = newStatus;
+    displayCards(kinerjaCache);
+
     try {
         await api.post('updatePinStatus', { idKinerja, newStatus });
-        await loadKinerjaData();
     } catch (e) {
         showError(e);
+        // Rollback jika gagal
+        if (itemInCache) itemInCache.Pin = isPinned ? 1 : 0;
+        displayCards(kinerjaCache);
     }
 }
 
-/**
- * ===============================================
- * Modal & Form Handling (Versi Lanjutan)
- * ===============================================
- */
+// ... (fungsi showEditModal, renderAttachment tidak perlu diubah signifikan)
 async function showEditModal(idKinerja) {
     const isNew = idKinerja === null;
+    let dataToEdit = {};
+
+    if (isNew) {
+        dataToEdit = {
+            Tanggal: new Date().toISOString().split('T')[0].split('-').reverse().join('/'),
+            Warna: 'default',
+            Deskripsi: '',
+            Kategori: '',
+            Foto: '',
+            File: ''
+        };
+    } else {
+        dataToEdit = kinerjaCache.find(item => item['ID Kinerja'] === idKinerja);
+        if (!dataToEdit) {
+            showError("Data tidak ditemukan di cache.");
+            return;
+        }
+    }
+    
     const finalIdKinerja = isNew ? `KIN-${Date.now()}` : idKinerja;
     
     document.getElementById('edit-data-modal')?.remove();
@@ -273,7 +296,12 @@ async function showEditModal(idKinerja) {
       <div id="edit-data-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl animate-scale-in flex flex-col max-h-[90vh]">
             <div id="modal-content-area" class="flex-1 p-6 overflow-y-auto">
-                <div class="text-center py-10"><i class="fas fa-spinner fa-spin fa-2x text-indigo-500"></i></div>
+                <textarea id="form-deskripsi" required class="w-full h-48 resize-none focus:outline-none text-slate-800 placeholder-slate-400 text-lg mb-4" placeholder="Tulis sesuatu...">${dataToEdit.Deskripsi || ''}</textarea>
+                <input type="hidden" id="form-kategori" value="${dataToEdit.Kategori || ''}">
+                <div class="space-y-3">
+                    <div id="photo-attachment-container"></div>
+                    <div id="file-attachment-container"></div>
+                </div>
             </div>
             <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between rounded-b-xl">
                 <div class="flex items-center gap-4">
@@ -290,42 +318,17 @@ async function showEditModal(idKinerja) {
       </div>`;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-    const populateModal = (data) => {
-        const contentArea = document.getElementById('modal-content-area');
-        const [day, month, year] = data.Tanggal ? data.Tanggal.split('/') : [null, null, null];
-        
-        document.getElementById('form-tanggal').value = data.Tanggal ? `${year}-${month}-${day}` : new Date().toISOString().split('T')[0];
-        document.getElementById('form-warna').value = data.Warna || 'default';
-        
-        contentArea.innerHTML = `
-            <textarea id="form-deskripsi" required class="w-full h-48 resize-none focus:outline-none text-slate-800 placeholder-slate-400 text-lg mb-4" placeholder="Tulis sesuatu...">${data.Deskripsi || ''}</textarea>
-            <input type="hidden" id="form-kategori" value="${data.Kategori || ''}">
-            <div class="space-y-3">
-                <div id="photo-attachment-container"></div>
-                <div id="file-attachment-container"></div>
-            </div>`;
-        
-        renderAttachment('photo', data.Foto, finalIdKinerja);
-        renderAttachment('file', data.File, finalIdKinerja);
+    // Populate form fields
+    const [day, month, year] = dataToEdit.Tanggal.split('/');
+    document.getElementById('form-tanggal').value = `${year}-${month}-${day}`;
+    document.getElementById('form-warna').value = dataToEdit.Warna || 'default';
+    renderAttachment('photo', dataToEdit.Foto, finalIdKinerja);
+    renderAttachment('file', dataToEdit.File, finalIdKinerja);
+    document.querySelectorAll('#edit-color-picker .color-swatch').forEach(swatch => {
+        swatch.style.outline = (swatch.dataset.color === (dataToEdit.Warna || 'default')) ? '2px solid #0f172a' : 'none';
+    });
 
-        document.querySelectorAll('#edit-color-picker .color-swatch').forEach(swatch => {
-            swatch.style.outline = (swatch.dataset.color === (data.Warna || 'default')) ? '2px solid #0f172a' : 'none';
-        });
-    };
-
-    if (isNew) {
-        populateModal({});
-    } else {
-        const response = await api.get('getDataById', { id: idKinerja });
-        if (response.status === 'success') {
-            populateModal(response.data);
-        } else {
-            showError(response.message);
-            document.getElementById('edit-data-modal').remove();
-            return;
-        }
-    }
-    
+    // Setup event listeners
     document.getElementById('modal-cancel-btn').onclick = () => document.getElementById('edit-data-modal').remove();
     document.getElementById('modal-save-btn').onclick = () => handleSaveKinerja(isNew, finalIdKinerja);
     document.getElementById('edit-open-label-modal-btn').onclick = () => showLabelModal();
@@ -338,28 +341,6 @@ async function showEditModal(idKinerja) {
     };
 }
 
-function renderAttachment(type, url, idKinerja) {
-    const container = document.getElementById(`${type}-attachment-container`);
-    if (!container) return;
-    const columnName = type === 'photo' ? 'Foto' : 'File';
-    const acceptType = type === 'photo' ? 'image/*' : '*/*';
-    
-    let content = '';
-    if (url) {
-        content = `<div class="flex items-center justify-between p-2 bg-slate-100 rounded-md">
-            <a href="${url}" target="_blank" class="flex items-center gap-2 text-sm text-indigo-600 hover:underline truncate">
-                <i class="fas ${type === 'photo' ? 'fa-image' : 'fa-paperclip'}"></i>
-                <span class="truncate">Lihat ${type === 'photo' ? 'Gambar' : 'File'}</span>
-            </a>
-        </div>`;
-    } else {
-        content = `<button type="button" onclick="document.getElementById('upload-${type}-input').click()" class="w-full text-left p-2 text-sm text-slate-500 hover:bg-slate-100 rounded-md">
-            <i class="fas ${type === 'photo' ? 'fa-camera' : 'fa-upload'} mr-2"></i>Unggah ${type === 'photo' ? 'Gambar' : 'File'}
-        </button>
-        <input type="file" id="upload-${type}-input" accept="${acceptType}" class="hidden" onchange="handleFileUpload(this, '${idKinerja}', '${columnName}')">`;
-    }
-    container.innerHTML = content;
-}
 
 async function handleSaveKinerja(isNew, idKinerja) {
     const btn = document.getElementById('modal-save-btn');
@@ -374,27 +355,47 @@ async function handleSaveKinerja(isNew, idKinerja) {
         'Tanggal': `${day}/${month}/${year}`,
         'Deskripsi': document.getElementById('form-deskripsi').value,
         'Kategori': document.getElementById('form-kategori').value,
-        'Warna': document.getElementById('form-warna').value
+        'Warna': document.getElementById('form-warna').value,
+        // Asumsikan attachment URL belum ada saat menyimpan, akan diupdate terpisah
+        'Foto': isNew ? '' : (kinerjaCache.find(i=>i['ID Kinerja'] === idKinerja)?.Foto || ''),
+        'File': isNew ? '' : (kinerjaCache.find(i=>i['ID Kinerja'] === idKinerja)?.File || '')
     };
 
+    // ==================================================
+    // MODIFIKASI: Optimistic UI Update untuk Tambah/Edit
+    // ==================================================
     if (isNew) {
         const tgl = new Date(tanggalValue + 'T00:00:00');
         dataObject = { ...dataObject,
             'Hari': ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][tgl.getDay()],
             'Bulan': `'${month}`, 'Tahun': year, 'Pin': 0
         };
+        // Tambahkan ke cache di posisi paling atas
+        kinerjaCache.unshift(dataObject);
+    } else {
+        // Update item yang ada di cache
+        const index = kinerjaCache.findIndex(item => item['ID Kinerja'] === idKinerja);
+        if (index !== -1) {
+            // Gabungkan data lama (seperti Pin, Hari, dll) dengan data baru dari form
+            kinerjaCache[index] = { ...kinerjaCache[index], ...dataObject };
+        }
     }
+    
+    // Langsung tutup modal dan render ulang dari cache. Terasa instan!
+    document.getElementById('edit-data-modal').remove();
+    displayCards(kinerjaCache);
 
     try {
+        // Kirim data ke server di background
         const action = isNew ? 'addNewRow' : 'updateRowData';
         const response = await api.post(action, dataObject);
         if (response.status !== 'success') throw new Error(response.message);
-        document.getElementById('edit-data-modal').remove();
-        await loadKinerjaData();
+        // Jika sukses, tidak perlu melakukan apa-apa karena UI sudah update.
+        console.log("Save to server successful.");
     } catch (error) {
         showError(error);
-        btn.disabled = false;
-        btn.textContent = 'Simpan';
+        // Jika gagal, paksa refresh data dari server untuk mengembalikan ke kondisi sebelum diubah
+        loadKinerjaData(true); 
     }
 }
 
@@ -402,24 +403,36 @@ function showDeleteConfirmation(idKinerja) {
     document.getElementById('delete-modal')?.remove();
     const modalHtml = `<div id="delete-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm animate-scale-in"><h3 class="text-lg font-bold text-slate-800">Konfirmasi Hapus</h3><p class="text-sm text-slate-600 mt-2">Yakin ingin menghapus data ini?</p><div class="mt-6 flex justify-end space-x-3"><button id="cancel-delete-btn" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300">Batal</button><button id="confirm-delete-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Ya, Hapus</button></div></div></div>`;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+
     document.getElementById('cancel-delete-btn').onclick = () => document.getElementById('delete-modal').remove();
     document.getElementById('confirm-delete-btn').onclick = async () => {
-         const btn = document.getElementById('confirm-delete-btn');
-         btn.disabled = true;
-         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp; Menghapus...';
+        // ==================================================
+        // MODIFIKASI: Optimistic UI Update untuk Hapus
+        // ==================================================
+        // Simpan data lama untuk jaga-jaga jika gagal
+        const originalCache = [...kinerjaCache]; 
+        
+        // Hapus item dari cache
+        kinerjaCache = kinerjaCache.filter(item => item['ID Kinerja'] !== idKinerja);
+        
+        // Render ulang UI dan tutup modal
+        displayCards(kinerjaCache);
+        document.getElementById('delete-modal').remove();
+
         try {
+            // Kirim perintah hapus ke server
             await api.post('deleteRow', { idKinerja });
-            document.getElementById('delete-modal').remove();
-            await loadKinerjaData();
-        } catch(error) { showError(error); }
+            console.log("Delete from server successful.");
+        } catch(error) { 
+            showError(error); 
+            // Jika gagal, kembalikan cache ke kondisi semula dan render ulang
+            kinerjaCache = originalCache;
+            displayCards(kinerjaCache);
+        }
     };
 }
 
-/**
- * ===============================================
- * Helper & Utility Functions
- * ===============================================
- */
+
 function handleFileUpload(inputElement, idKinerja, columnName) {
     const file = inputElement.files[0];
     if (!file) return;
@@ -433,7 +446,17 @@ function handleFileUpload(inputElement, idKinerja, columnName) {
         try {
             const response = await api.post('uploadFile', { fileObject, idKinerja, columnName });
             if (response.error) throw new Error(response.error);
+
+            // Setelah upload berhasil, update cache dan render ulang attachment
+            const itemInCache = kinerjaCache.find(item => item['ID Kinerja'] === idKinerja);
+            if(itemInCache) {
+                if(columnName === 'Foto') itemInCache.Foto = response.viewerUrl;
+                if(columnName === 'File') itemInCache.File = response.viewerUrl;
+            }
             renderAttachment(columnName === 'Foto' ? 'photo' : 'file', response.viewerUrl, idKinerja);
+            // Optional: render ulang semua kartu jika URL foto/file ditampilkan di kartu utama
+            displayCards(kinerjaCache);
+
         } catch (err) {
             container.innerHTML = `<span class="text-red-600 font-bold text-sm p-2">Gagal: ${err.message}</span>`;
         }
@@ -441,6 +464,7 @@ function handleFileUpload(inputElement, idKinerja, columnName) {
     reader.readAsDataURL(file);
 }
 
+// ... (fungsi showLabelModal dan extractIdFromUrl tidak perlu diubah)
 async function showLabelModal() {
     document.getElementById('label-select-modal')?.remove();
     const modalHtml = `<div id="label-select-modal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-[60] p-4"><div class="bg-white rounded-lg shadow-xl w-full max-w-xs animate-scale-in flex flex-col"><div class="p-3 border-b border-slate-200"><input type="text" id="label-search-input" placeholder="Cari atau tambah..." class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-400"></div><div id="label-list-container" class="p-2 flex-1 overflow-y-auto max-h-60"><div class="text-center p-4"><i class="fas fa-spinner fa-spin text-indigo-500"></i></div></div><div class="p-3 bg-slate-50 border-t text-right rounded-b-lg"><button id="apply-label-btn" class="px-4 py-2 bg-slate-800 text-white text-sm font-semibold rounded-md hover:bg-slate-900">Terapkan</button></div></div></div>`;
@@ -505,3 +529,4 @@ function extractIdFromUrl(url) {
     const match = url.match(/[-\w]{25,}/);
     return match ? match[0] : null;
 }
+
