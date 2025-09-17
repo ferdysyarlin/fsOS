@@ -1,5 +1,5 @@
 // --- PENTING: Ganti dengan URL dan PIN Anda ---
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxG0xKo8p__1Zhok-VRMxsNmVy0kotgS5p6HKREIU5UwLKaD_B2IN1L5OGB4ffX_WL4fw/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzp4e4NdMhIHWn-ekNPp3cRrwScj81yK-5MGDADuTrJ6LAisa2JcLXGqA_zaK3eFGV55A/exec';
 const CORRECT_PIN = '1234'; // Ganti dengan PIN 4 digit rahasia Anda
 
 // --- Elemen DOM ---
@@ -42,8 +42,26 @@ pinForm.addEventListener('submit', (e) => {
     }
 });
 
-// 2. Kontrol Modal Form
-addDataButton.addEventListener('click', () => formModalOverlay.classList.remove('hidden'));
+// 2. Kontrol Modal Form & Pembuatan ID Kinerja
+addDataButton.addEventListener('click', () => {
+    // Reset form untuk entri baru
+    form.reset();
+    document.getElementById('tanggal').valueAsDate = new Date();
+    document.querySelector('input[name="status"][value="Hadir"]').checked = true;
+
+    // --- PEMBUATAN ID KINERJA SAAT MODAL DIBUKA ---
+    const tanggalInput = document.getElementById('tanggal').value; // Format: YYYY-MM-DD
+    const tanggalFormatted = tanggalInput.replace(/-/g, ''); // Menjadi YYYYMMDD
+    const randomString = Math.random().toString(36).substring(2, 7); // 5 karakter acak
+    const idKinerja = `${tanggalFormatted}-${randomString}`;
+    
+    // Setel ID di input form yang tersembunyi
+    document.getElementById('id-kinerja-input').value = idKinerja;
+    
+    // Tampilkan modal
+    formModalOverlay.classList.remove('hidden');
+});
+
 closeFormModalButton.addEventListener('click', () => formModalOverlay.classList.add('hidden'));
 formModalOverlay.addEventListener('click', (e) => {
     if (e.target === formModalOverlay) formModalOverlay.classList.add('hidden');
@@ -82,7 +100,7 @@ function renderTable(data) {
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${formatDate(item.Tanggal)}</td>
                     <td class="px-6 py-4">
                         <div class="text-sm font-medium text-gray-900">${item.Jenis || ''}</div>
-                        <div class="text-sm text-gray-500">${item.Kinerja || ''}</div>
+                        <div class="text-sm text-gray-500">${item.Deskripsi || ''}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(item.Status)}">${item.Status || ''}</span>
@@ -102,13 +120,16 @@ function renderTable(data) {
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
     try {
+        if (String(dateString).includes('/')) {
+             return dateString.replace(/'/g, '');
+        }
         const date = new Date(dateString);
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear();
         return `${day}/${month}/${year}`;
     } catch (e) {
-        return dateString; // Fallback if date is invalid
+        return dateString;
     }
 }
 
@@ -134,6 +155,12 @@ form.addEventListener('submit', async (e) => {
     
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
+    
+    // ID Kinerja sudah ada di dalam form data dari hidden input
+    
+    // Mengganti nama key 'kinerja' menjadi 'Deskripsi' agar cocok dengan header Sheet
+    data['Deskripsi'] = data['kinerja'];
+    delete data['kinerja'];
 
     try {
         await fetch(GAS_WEB_APP_URL, {
@@ -142,10 +169,13 @@ form.addEventListener('submit', async (e) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         });
-        form.reset();
-        document.getElementById('tanggal').valueAsDate = new Date();
+        
         formModalOverlay.classList.add('hidden');
-        await fetchData(); // Tunggu data selesai dimuat ulang
+        
+        setTimeout(() => {
+            fetchData();
+        }, 1000);
+
     } catch (error) {
         console.error('Error submitting data:', error);
         alert('Gagal menyimpan data. Cek konsol untuk detail.');
