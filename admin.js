@@ -1,5 +1,6 @@
 import { init as initKinerja, fetchData as fetchKinerjaData } from './kinerja.js';
 import { init as initSkp, fetchData as fetchSkpData } from './skp.js';
+import { init as initDashboard, fetchData as fetchDashboardData } from './dashboard.js';
 
 // --- Konfigurasi ---
 const CORRECT_PIN = '1234';
@@ -13,7 +14,7 @@ const sidebarOverlay = document.getElementById('sidebar-overlay');
 const hamburgerButton = document.getElementById('hamburger-button');
 const reloadDataButton = document.getElementById('reload-data-button');
 const navLinks = document.querySelectorAll('.nav-link');
-let currentPage = 'kinerja';
+let currentPage = 'dashboard'; // Halaman default diubah menjadi dashboard
 
 // --- Logika Utama ---
 
@@ -30,7 +31,9 @@ async function showView(pageName) {
         
         contentContainer.innerHTML = await response.text();
         
-        if (pageName === 'kinerja') {
+        if (pageName === 'dashboard') {
+            initDashboard();
+        } else if (pageName === 'kinerja') {
             initKinerja();
         } else if (pageName === 'skp') {
             initSkp();
@@ -69,7 +72,7 @@ function handlePinSubmit(e) {
     if (pinInput.value === CORRECT_PIN) {
         pinModalOverlay.classList.add('opacity-0', 'pointer-events-none');
         mainAppContainer.classList.remove('hidden');
-        showView('kinerja'); 
+        showView('dashboard'); // Tampilkan dasbor setelah login
     } else {
         pinError.textContent = 'PIN salah, coba lagi.';
         if(pinModalContent) pinModalContent.classList.add('shake');
@@ -82,7 +85,9 @@ function handlePinSubmit(e) {
 }
 
 function reloadCurrentPageData() {
-    if (currentPage === 'kinerja') {
+    if (currentPage === 'dashboard') {
+        fetchDashboardData();
+    } else if (currentPage === 'kinerja') {
         fetchKinerjaData();
     } else if (currentPage === 'skp') {
         fetchSkpData();
