@@ -1,5 +1,5 @@
 // --- Konfigurasi ---
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwEiDsc6nttKld_RyZtSs8r9kRVKN3LKV2ukEgV1c87ZnQWtcvUrK7Lg481zKVYLgFi1Q/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzXDaeS8wyvlbeuwpsl5KZyOemE0ergFBdvh7TLWWwbw77GFYN86K7GMGRy-I1_pn4Pew/exec';
 const CORRECT_PIN = '1234';
 
 // --- Variabel Global ---
