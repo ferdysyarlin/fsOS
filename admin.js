@@ -41,7 +41,6 @@ const fileLamaP = document.getElementById('file-lama');
 const deleteModalOverlay = document.getElementById('delete-modal-overlay');
 const cancelDeleteButton = document.getElementById('cancel-delete-button');
 const confirmDeleteButton = document.getElementById('confirm-delete-button');
-// Filter Elements
 const searchInput = document.getElementById('search-input');
 const statusFilter = document.getElementById('status-filter');
 const monthFilter = document.getElementById('month-filter');
@@ -197,7 +196,9 @@ function createTableRow(item) {
             ${getPreviewThumbnail(item.File)}
         </td>
         <td class="px-6 py-4 whitespace-nowrap data-cell cursor-pointer"><div class="text-sm font-medium text-gray-900">${item.Tanggal || 'N/A'}</div></td>
-        <td class="px-6 py-4 data-cell cursor-pointer"><div class="text-sm text-gray-700 truncate" style="max-width: 300px;">${item.Deskripsi || ''}</div></td>
+        <td class="px-6 py-4 data-cell cursor-pointer">
+            <div class="text-sm text-gray-700 whitespace-pre-wrap max-h-20 overflow-y-auto">${item.Deskripsi || ''}</div>
+        </td>
         <td class="px-6 py-4 whitespace-nowrap data-cell cursor-pointer">${getStatusBadge(item.Status)}</td>
         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-right">
             <div class="flex items-center justify-end gap-1">
@@ -216,7 +217,10 @@ function createCardView(item) {
         <div class="data-cell cursor-pointer flex gap-4">
             ${getPreviewThumbnail(item.File)}
             <div class="flex-1">
-                <div class="flex justify-between items-start"><p class="text-sm font-semibold text-gray-800">${item.Deskripsi || 'Tanpa Deskripsi'}</p>${getStatusBadge(item.Status)}</div>
+                <div class="flex justify-between items-start">
+                    <p class="text-sm font-semibold text-gray-800 whitespace-pre-wrap max-h-24 overflow-y-auto">${item.Deskripsi || 'Tanpa Deskripsi'}</p>
+                    ${getStatusBadge(item.Status)}
+                </div>
                 <p class="text-xs text-gray-500 mt-1">${item.Tanggal || 'N/A'}</p>
             </div>
         </div>
