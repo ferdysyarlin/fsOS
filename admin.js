@@ -41,6 +41,7 @@ const fileLamaP = document.getElementById('file-lama');
 const deleteModalOverlay = document.getElementById('delete-modal-overlay');
 const cancelDeleteButton = document.getElementById('cancel-delete-button');
 const confirmDeleteButton = document.getElementById('confirm-delete-button');
+// Filter Elements
 const searchInput = document.getElementById('search-input');
 const statusFilter = document.getElementById('status-filter');
 const monthFilter = document.getElementById('month-filter');
@@ -211,20 +212,20 @@ function createTableRow(item) {
 
 function createCardView(item) {
    const card = document.createElement('div');
-    card.className = 'bg-white rounded-xl shadow-md p-4 space-y-3';
+    card.className = 'bg-white rounded-xl shadow-md p-4 flex items-center justify-between gap-4';
     card.setAttribute('data-id', item['ID Kinerja']);
     card.innerHTML = `
-        <div class="data-cell cursor-pointer flex gap-4">
+        <div class="data-cell cursor-pointer flex-1 flex items-center gap-4">
             ${getPreviewThumbnail(item.File)}
             <div class="flex-1">
                 <div class="flex justify-between items-start">
-                    <p class="text-sm font-semibold text-gray-800 whitespace-pre-wrap max-h-24 overflow-y-auto">${item.Deskripsi || 'Tanpa Deskripsi'}</p>
-                    ${getStatusBadge(item.Status)}
+                    <p class="text-sm font-semibold text-gray-800 whitespace-pre-wrap max-h-16 overflow-y-auto">${item.Deskripsi || 'Tanpa Deskripsi'}</p>
+                    <div class="flex-shrink-0 ml-2">${getStatusBadge(item.Status)}</div>
                 </div>
                 <p class="text-xs text-gray-500 mt-1">${item.Tanggal || 'N/A'}</p>
             </div>
         </div>
-        <div class="border-t border-gray-100 pt-3 flex items-center justify-end gap-2">
+        <div class="flex flex-col gap-1">
             <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn"><i data-lucide="pencil" class="w-5 h-5"></i></button>
             <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
         </div>`;
@@ -392,9 +393,9 @@ function getPreviewThumbnail(fileJson) {
     const firstImage = files.find(f => f.type.startsWith('image/'));
     if (firstImage) {
         const thumbnailUrl = createThumbnailUrl(firstImage.url);
-        return `<img src="${thumbnailUrl}" class="w-10 h-10 rounded-md object-cover border" loading="lazy">`;
+        return `<img src="${thumbnailUrl}" class="w-10 h-10 rounded-md object-cover border flex-shrink-0" loading="lazy">`;
     }
-    return `<div class="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center text-gray-400"><i data-lucide="file-text" class="w-5 h-5"></i></div>`;
+    return `<div class="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0"><i data-lucide="file-text" class="w-5 h-5"></i></div>`;
 }
 
 function createEmbedUrl(originalUrl) {
