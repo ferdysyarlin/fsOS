@@ -1,5 +1,5 @@
 // --- PENTING: Ganti URL di bawah ini dengan URL Web App Anda ---
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxG0xKo8p__1Zhok-VRMxsNmVy0kotgS5p6HKREIU5UwLKaD_B2IN1L5OGB4ffX_WL4fw/exec';
 
 const form = document.getElementById('kinerja-form');
 const submitButton = document.getElementById('submit-button');
