@@ -1,5 +1,5 @@
 // --- PENTING: Ganti dengan URL Anda ---
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwfWTBx2Q_3upcAyIul1pP3V0OiffCtgVDdT8xWC2uQOX-Tw-nqcH-26vlGoP1svddtTg/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyJX8CyFC12t9fHQxCrsr8tjxMcoPVelJX8HkkPGmyGyIgNjdHnYUrMUhlUU7SzEenR/exec';
 
 let localSkpData = [];
 
