@@ -1,6 +1,16 @@
-// --- PENTING: Ganti URL di bawah ini dengan URL Web App Anda ---
+// --- PENTING: Ganti dengan URL dan PIN Anda ---
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxG0xKo8p__1Zhok-VRMxsNmVy0kotgS5p6HKREIU5UwLKaD_B2IN1L5OGB4ffX_WL4fw/exec';
+const CORRECT_PIN = '1234'; // Ganti dengan PIN 4 digit rahasia Anda
 
+// Elemen DOM untuk Modal
+const pinModalOverlay = document.getElementById('pin-modal-overlay');
+const pinModalContent = document.getElementById('pin-modal-content');
+const pinForm = document.getElementById('pin-form');
+const pinInput = document.getElementById('pin-input');
+const pinError = document.getElementById('pin-error');
+const mainContent = document.getElementById('main-content');
+
+// Elemen DOM untuk Aplikasi Utama
 const form = document.getElementById('kinerja-form');
 const submitButton = document.getElementById('submit-button');
 const table = document.getElementById('kinerja-table');
@@ -9,8 +19,38 @@ const loadingDiv = document.getElementById('loading');
 const errorDiv = document.getElementById('error');
 const errorMessageP = document.getElementById('error-message');
 
-// Fungsi untuk mengambil dan menampilkan data
+
+// Event listener untuk verifikasi PIN
+pinForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    pinError.textContent = '';
+    
+    if (pinInput.value === CORRECT_PIN) {
+        // Jika PIN benar, sembunyikan modal dan tampilkan konten utama
+        pinModalOverlay.classList.add('opacity-0', 'pointer-events-none');
+        mainContent.classList.remove('hidden');
+        
+        // Atur tanggal default dan mulai ambil data
+        document.getElementById('tanggal').valueAsDate = new Date();
+        fetchData();
+    } else {
+        // Jika PIN salah, tampilkan pesan error dan goyangkan modal
+        pinError.textContent = 'PIN salah, coba lagi.';
+        pinModalContent.classList.add('shake');
+        pinInput.value = '';
+        pinInput.focus();
+        
+        // Hapus class shake setelah animasi selesai
+        setTimeout(() => {
+            pinModalContent.classList.remove('shake');
+        }, 500);
+    }
+});
+
+
+// Fungsi untuk mengambil dan menampilkan data (hanya berjalan setelah PIN benar)
 async function fetchData() {
+    loadingDiv.innerHTML = '<p class="text-gray-500">Memuat data...</p>';
     loadingDiv.style.display = 'block';
     table.classList.add('hidden');
     errorDiv.classList.add('hidden');
@@ -77,7 +117,7 @@ function getStatusColor(status) {
     }
 }
 
-// Event listener untuk form submission
+// Event listener untuk form submission data kinerja
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     submitButton.disabled = true;
@@ -117,8 +157,3 @@ form.addEventListener('submit', async (e) => {
     }
 });
 
-// Panggil fetchData saat halaman pertama kali dimuat
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('tanggal').valueAsDate = new Date();
-    fetchData();
-});
