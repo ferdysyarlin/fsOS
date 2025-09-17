@@ -3,7 +3,7 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwIuNqfyRRnR8Ia
 
 let localSkpData = [];
 
-// --- Fungsi Fetch Data (Sekarang di-export) ---
+// --- Fungsi untuk mengambil data SKP (sekarang di-export) ---
 export async function fetchData() {
     const loadingDiv = document.getElementById('skp-loading');
     const errorDiv = document.getElementById('skp-error');
@@ -25,7 +25,7 @@ export async function fetchData() {
     }
 }
 
-// --- Fungsi Render ---
+// --- Fungsi untuk merender tabel SKP ---
 function renderSkpData(data) {
     const container = document.getElementById('skp-table-container');
     if (!data.length) {
