@@ -22,17 +22,18 @@ const colorClasses = {
     'yellow': 'bg-yellow-300',
     'red': 'bg-red-300',
     'purple': 'bg-purple-300',
-}
+};
 
-// --- Variabel untuk menampung elemen DOM ---
+// --- Variabel DOM ---
 let listView, detailView, tableBody, cardContainer, detailContent, formModalOverlay,
     closeFormModalButton, form, submitButton, idKinerjaInput, tanggalInput,
     deskripsiInput, statusContainer, statusInput, fileInput, fileNameSpan,
     fileLamaP, deleteModalOverlay, cancelDeleteButton, confirmDeleteButton,
     searchInput, statusFilter, monthFilter, yearFilter, resetFilterButton,
-    reloadDataButton, mobileFilterButton, mobileFilterModal, closeMobileFilterButton,
+    mobileFilterButton, mobileFilterModal, closeMobileFilterButton,
     applyMobileFilterButton, searchInputMobile, statusFilterMobile, monthFilterMobile,
-    yearFilterMobile, colorContainer, warnaInput, loadingDiv, errorDiv, errorMessageP, addDataButton;
+    yearFilterMobile, colorContainer, warnaInput, loadingDiv, errorDiv, errorMessageP, addDataButton,
+    resetFilterButtonMobile;
 
 // --- Fungsi Inisialisasi ---
 export function init() {
@@ -61,8 +62,7 @@ export function init() {
     statusFilter = document.getElementById('status-filter');
     monthFilter = document.getElementById('month-filter');
     yearFilter = document.getElementById('year-filter');
-    resetFilterButton = document.querySelector('header #reset-filter-button'); 
-    reloadDataButton = document.querySelector('header #reload-data-button'); 
+    resetFilterButton = document.getElementById('reset-filter-button');
     mobileFilterButton = document.getElementById('mobile-filter-button');
     mobileFilterModal = document.getElementById('mobile-filter-modal');
     closeMobileFilterButton = document.getElementById('close-mobile-filter-button');
@@ -77,10 +77,12 @@ export function init() {
     errorDiv = document.getElementById('error');
     errorMessageP = document.getElementById('error-message');
     addDataButton = document.getElementById('add-data-button');
+    resetFilterButtonMobile = document.getElementById('reset-filter-button-mobile');
+
 
     // Memasang Event Listeners
     addDataButton.addEventListener('click', openCreateForm);
-    listView.addEventListener('click', handleBodyClick); // Event delegation
+    listView.addEventListener('click', handleBodyClick);
     closeFormModalButton.addEventListener('click', closeFormModal);
     formModalOverlay.addEventListener('click', (e) => { if (e.target === formModalOverlay) closeFormModal() });
     cancelDeleteButton.addEventListener('click', () => deleteModalOverlay.classList.add('hidden'));
@@ -93,8 +95,7 @@ export function init() {
     [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
     searchInputMobile.addEventListener('input', applyAndRenderFilters);
     if(resetFilterButton) resetFilterButton.addEventListener('click', resetFilters);
-    if(reloadDataButton) reloadDataButton.addEventListener('click', fetchData);
-
+    if(resetFilterButtonMobile) resetFilterButtonMobile.addEventListener('click', resetFilters);
 
     // Mobile Filter Listeners
     mobileFilterButton.addEventListener('click', () => {
@@ -114,8 +115,23 @@ export function init() {
     fetchData();
 }
 
+// --- Fungsi Fetch Data (Sekarang di-export) ---
+export async function fetchData() {
+    showLoading();
+    try {
+        const response = await fetch(GAS_WEB_APP_URL);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        localData = await response.json();
+        populateFilters();
+        applyAndRenderFilters();
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
 
-// --- Sisanya adalah semua fungsi dari admin.js lama ---
+// --- SEMUA FUNGSI LAINNYA ---
 
 function showDetailView(id) {
     const itemData = localData.find(item => item['ID Kinerja'] === id);
@@ -195,21 +211,6 @@ function highlightActiveItem(id) {
     document.querySelectorAll('[data-id]').forEach(el => {
         el.classList.toggle('active-item', el.getAttribute('data-id') === id);
     });
-}
-
-async function fetchData() {
-    showLoading();
-    try {
-        const response = await fetch(GAS_WEB_APP_URL);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        localData = await response.json();
-        populateFilters();
-        applyAndRenderFilters();
-    } catch (error) {
-        showError(error.message);
-    } finally {
-        hideLoading();
-    }
 }
 
 function renderData(dataToRender) {
