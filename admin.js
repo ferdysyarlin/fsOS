@@ -110,8 +110,9 @@ function renderDetail(data) {
     } catch (e) { console.error("Gagal parse JSON file:", e); }
 
     detailContent.innerHTML = `
-        <button onclick="hideDetailView()" class="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition">
-            <i data-lucide="x"></i>
+        <button onclick="hideDetailView()" class="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            Kembali
         </button>
         <div class="flex justify-between items-start">
             <div>
@@ -469,7 +470,7 @@ function populateFilters() {
 }
 
 function applyAndRenderFilters() {
-    const searchTerm = searchInput.value.toLowerCase();
+    const searchTerm = (searchInput.value || searchInputMobile.value).toLowerCase();
     const status = statusFilter.value;
     const month = monthFilter.value;
     const year = yearFilter.value;
@@ -486,6 +487,7 @@ function applyAndRenderFilters() {
 
 function resetFilters() {
     searchInput.value = '';
+    searchInputMobile.value = '';
     statusFilter.value = '';
     monthFilter.value = '';
     yearFilter.value = '';
@@ -493,14 +495,12 @@ function resetFilters() {
 }
 
 function syncMobileFilters() {
-    searchInput.value = searchInputMobile.value;
     statusFilter.value = statusFilterMobile.value;
     monthFilter.value = monthFilterMobile.value;
     yearFilter.value = yearFilterMobile.value;
 }
 
 function syncDesktopFilters() {
-    searchInputMobile.value = searchInput.value;
     statusFilterMobile.value = statusFilter.value;
     monthFilterMobile.value = monthFilter.value;
     yearFilterMobile.value = yearFilter.value;
@@ -521,6 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resetFilterButton.addEventListener('click', resetFilters);
     reloadDataButton.addEventListener('click', fetchData);
     [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
+    searchInputMobile.addEventListener('input', applyAndRenderFilters);
     
     // Mobile Filter Listeners
     mobileFilterButton.addEventListener('click', () => {
