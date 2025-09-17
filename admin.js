@@ -2,7 +2,8 @@
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxG0xKo8p__1Zhok-VRMxsNmVy0kotgS5p6HKREIU5UwLKaD_B2IN1L5OGB4ffX_WL4fw/exec';
 const CORRECT_PIN = '1234'; // Ganti dengan PIN 4 digit rahasia Anda
 
-// Elemen DOM untuk Modal
+// --- Elemen DOM ---
+// Modal PIN
 const pinModalOverlay = document.getElementById('pin-modal-overlay');
 const pinModalContent = document.getElementById('pin-modal-content');
 const pinForm = document.getElementById('pin-form');
@@ -10,7 +11,12 @@ const pinInput = document.getElementById('pin-input');
 const pinError = document.getElementById('pin-error');
 const mainContent = document.getElementById('main-content');
 
-// Elemen DOM untuk Aplikasi Utama
+// Modal Form
+const formModalOverlay = document.getElementById('form-modal-overlay');
+const closeFormModalButton = document.getElementById('close-form-modal');
+const addDataButton = document.getElementById('add-data-button');
+
+// Aplikasi Utama
 const form = document.getElementById('kinerja-form');
 const submitButton = document.getElementById('submit-button');
 const table = document.getElementById('kinerja-table');
@@ -20,35 +26,45 @@ const errorDiv = document.getElementById('error');
 const errorMessageP = document.getElementById('error-message');
 
 
-// Event listener untuk verifikasi PIN
+// --- LOGIKA APLIKASI ---
+
+// 1. Verifikasi PIN
 pinForm.addEventListener('submit', (e) => {
     e.preventDefault();
     pinError.textContent = '';
     
     if (pinInput.value === CORRECT_PIN) {
-        // Jika PIN benar, sembunyikan modal dan tampilkan konten utama
         pinModalOverlay.classList.add('opacity-0', 'pointer-events-none');
         mainContent.classList.remove('hidden');
+        addDataButton.classList.remove('hidden'); // Tampilkan tombol tambah
         
-        // Atur tanggal default dan mulai ambil data
         document.getElementById('tanggal').valueAsDate = new Date();
         fetchData();
     } else {
-        // Jika PIN salah, tampilkan pesan error dan goyangkan modal
         pinError.textContent = 'PIN salah, coba lagi.';
         pinModalContent.classList.add('shake');
         pinInput.value = '';
         pinInput.focus();
-        
-        // Hapus class shake setelah animasi selesai
-        setTimeout(() => {
-            pinModalContent.classList.remove('shake');
-        }, 500);
+        setTimeout(() => pinModalContent.classList.remove('shake'), 500);
     }
 });
 
+// 2. Kontrol Modal Form
+addDataButton.addEventListener('click', () => {
+    formModalOverlay.classList.remove('hidden');
+});
 
-// Fungsi untuk mengambil dan menampilkan data (hanya berjalan setelah PIN benar)
+closeFormModalButton.addEventListener('click', () => {
+    formModalOverlay.classList.add('hidden');
+});
+
+formModalOverlay.addEventListener('click', (e) => {
+    if (e.target === formModalOverlay) {
+        formModalOverlay.classList.add('hidden');
+    }
+});
+
+// 3. Logika Data (Fetch & Render)
 async function fetchData() {
     loadingDiv.innerHTML = '<p class="text-gray-500">Memuat data...</p>';
     loadingDiv.style.display = 'block';
@@ -57,17 +73,10 @@ async function fetchData() {
 
     try {
         const response = await fetch(GAS_WEB_APP_URL);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
-
-        if (data.error) {
-            throw new Error(data.message);
-        }
-        
+        if (data.error) throw new Error(data.message);
         renderTable(data);
-
     } catch (error) {
         console.error('Error fetching data:', error);
         errorDiv.classList.remove('hidden');
@@ -77,9 +86,8 @@ async function fetchData() {
     }
 }
 
-// Fungsi untuk merender data ke dalam tabel
 function renderTable(data) {
-    tableBody.innerHTML = ''; // Kosongkan tabel sebelum diisi
+    tableBody.innerHTML = '';
     if (data.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-gray-500">Belum ada data kinerja.</td></tr>';
     } else {
@@ -92,9 +100,7 @@ function renderTable(data) {
                         <div class="text-sm text-gray-500">${item.Kinerja || ''}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(item.Status)}">
-                            ${item.Status || ''}
-                        </span>
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(item.Status)}">${item.Status || ''}</span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-indigo-600 hover:text-indigo-900">
                         ${item.File ? `<a href="${item.File}" target="_blank" rel="noopener noreferrer">Lihat File</a>` : 'Tidak ada'}
@@ -107,7 +113,6 @@ function renderTable(data) {
     table.classList.remove('hidden');
 }
 
-// Helper untuk warna status
 function getStatusColor(status) {
     switch (status) {
         case 'Selesai': return 'bg-green-100 text-green-800';
@@ -117,37 +122,27 @@ function getStatusColor(status) {
     }
 }
 
-// Event listener untuk form submission data kinerja
+// 4. Submit Form Kinerja
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     submitButton.disabled = true;
     submitButton.textContent = 'Menyimpan...';
 
     const formData = new FormData(form);
-    const data = {
-        Tanggal: formData.get('tanggal'),
-        Jenis: formData.get('jenis'),
-        Kinerja: formData.get('kinerja'),
-        File: formData.get('file'),
-        Status: formData.get('status'),
-    };
+    const data = Object.fromEntries(formData.entries());
 
     try {
-        const response = await fetch(GAS_WEB_APP_URL, {
+        await fetch(GAS_WEB_APP_URL, {
             method: 'POST',
-            mode: 'no-cors', // Diperlukan untuk tipe redirect dari GAS
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         });
         
-        // Karena 'no-cors' tidak bisa membaca response, kita anggap sukses
-        // dan langsung refresh data
         form.reset();
         document.getElementById('tanggal').valueAsDate = new Date();
+        formModalOverlay.classList.add('hidden'); // Tutup modal setelah submit
         fetchData();
-
     } catch (error) {
         console.error('Error submitting data:', error);
         alert('Gagal menyimpan data. Cek konsol untuk detail.');
