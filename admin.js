@@ -1,6 +1,5 @@
 import { init as initKinerja, fetchData as fetchKinerjaData } from './kinerja.js';
 import { init as initSkp, fetchData as fetchSkpData } from './skp.js';
-import { init as initDashboard, fetchData as fetchDashboardData } from './dashboard.js';
 
 // --- Konfigurasi ---
 const CORRECT_PIN = '1234';
@@ -14,8 +13,7 @@ const sidebarOverlay = document.getElementById('sidebar-overlay');
 const hamburgerButton = document.getElementById('hamburger-button');
 const reloadDataButton = document.getElementById('reload-data-button');
 const navLinks = document.querySelectorAll('.nav-link');
-const addDataButton = document.getElementById('add-data-button'); // Tombol tambah kinerja
-let currentPage = 'dashboard';
+let currentPage = 'kinerja';
 
 // --- Logika Utama ---
 
@@ -26,22 +24,13 @@ async function showView(pageName) {
     closeSidebar();
     updateActiveLink();
 
-    // Tampilkan/sembunyikan tombol tambah berdasarkan halaman
-    if (pageName === 'kinerja') {
-        addDataButton.classList.remove('hidden');
-    } else {
-        addDataButton.classList.add('hidden');
-    }
-
     try {
         const response = await fetch(`${pageName}.html`);
         if (!response.ok) throw new Error(`Halaman ${pageName}.html tidak ditemukan.`);
         
         contentContainer.innerHTML = await response.text();
         
-        if (pageName === 'dashboard') {
-            initDashboard();
-        } else if (pageName === 'kinerja') {
+        if (pageName === 'kinerja') {
             initKinerja();
         } else if (pageName === 'skp') {
             initSkp();
@@ -80,7 +69,7 @@ function handlePinSubmit(e) {
     if (pinInput.value === CORRECT_PIN) {
         pinModalOverlay.classList.add('opacity-0', 'pointer-events-none');
         mainAppContainer.classList.remove('hidden');
-        showView('dashboard'); 
+        showView('kinerja'); 
     } else {
         pinError.textContent = 'PIN salah, coba lagi.';
         if(pinModalContent) pinModalContent.classList.add('shake');
@@ -93,9 +82,7 @@ function handlePinSubmit(e) {
 }
 
 function reloadCurrentPageData() {
-    if (currentPage === 'dashboard') {
-        fetchDashboardData();
-    } else if (currentPage === 'kinerja') {
+    if (currentPage === 'kinerja') {
         fetchKinerjaData();
     } else if (currentPage === 'skp') {
         fetchSkpData();
