@@ -14,20 +14,17 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
-        /* Animasi untuk modal */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
             20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
-        .shake {
-            animation: shake 0.5s ease-in-out;
-        }
+        .shake { animation: shake 0.5s ease-in-out; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <!-- Modal Verifikasi PIN -->
+    <!-- Modal Verifikasi PIN (Sama seperti sebelumnya) -->
     <div id="pin-modal-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 transition-opacity duration-300">
         <div id="pin-modal-content" class="bg-white p-8 rounded-xl shadow-2xl text-center w-full max-w-sm mx-4">
             <h2 class="text-2xl font-bold mb-4">Verifikasi PIN</h2>
@@ -42,92 +39,95 @@
         </div>
     </div>
 
-    <!-- Konten Utama (Awalnya Tersembunyi) -->
-    <div id="main-content" class="hidden">
-        <div class="container mx-auto p-4 md:p-8 max-w-7xl">
-
-            <!-- Header -->
-            <header class="mb-8 flex justify-between items-center">
-                <div>
-                    <h1 class="text-4xl font-bold text-gray-800">fsOS - Admin</h1>
-                    <p class="text-lg text-gray-600">Monitor dan kelola pekerjaan harian Anda.</p>
-                </div>
-                <a href="index.html" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors">
-                    Kembali ke Beranda
-                </a>
-            </header>
-
-            <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                <!-- Kolom Kiri: Form Input -->
-                <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-md h-fit">
-                    <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Tambah Kinerja Baru</h2>
-                    <form id="kinerja-form">
-                        <div class="space-y-4">
-                            <div>
-                                <label for="tanggal" class="block text-sm font-medium text-gray-700">Tanggal</label>
-                                <input type="date" id="tanggal" name="tanggal" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                            </div>
-                            <div>
-                                <label for="jenis" class="block text-sm font-medium text-gray-700">Jenis Pekerjaan</label>
-                                <input type="text" id="jenis" name="jenis" placeholder="Contoh: Desain Grafis, Coding" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                            </div>
-                            <div>
-                                <label for="kinerja" class="block text-sm font-medium text-gray-700">Detail Kinerja</label>
-                                <textarea id="kinerja" name="kinerja" rows="4" placeholder="Jelaskan pekerjaan yang dilakukan..." required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
-                            </div>
-                            <div>
-                                <label for="file" class="block text-sm font-medium text-gray-700">Link File (Google Drive)</label>
-                                <input type="url" id="file" name="file" placeholder="https://docs.google.com/..." class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                            </div>
-                            <div>
-                                <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
-                                <select id="status" name="status" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                                    <option>Baru</option>
-                                    <option>Dalam Proses</option>
-                                    <option>Selesai</option>
-                                    <option>Revisi</option>
-                                </select>
-                            </div>
-                            <div>
-                                <button type="submit" id="submit-button" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                    Simpan Kinerja
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Kolom Kanan: Tabel Data -->
-                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
-                    <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Daftar Kinerja</h2>
-                    <div id="loading" class="text-center py-8">
-                        <p class="text-gray-500">Menunggu verifikasi...</p>
+    <!-- Modal Form Tambah Kinerja -->
+    <div id="form-modal-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-40 transition-opacity duration-300">
+        <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-lg mx-4">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h2 class="text-2xl font-semibold">Tambah Kinerja Baru</h2>
+                <button id="close-form-modal" class="text-gray-400 hover:text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            <form id="kinerja-form">
+                <div class="space-y-4">
+                    <!-- Isi form sama seperti sebelumnya -->
+                    <div>
+                        <label for="tanggal" class="block text-sm font-medium text-gray-700">Tanggal</label>
+                        <input type="date" id="tanggal" name="tanggal" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                     </div>
-                    <div id="error" class="hidden text-center py-8 bg-red-50 p-4 rounded-lg">
-                        <p class="text-red-600 font-semibold">Gagal memuat data!</p>
-                        <p class="text-red-500 text-sm mt-1" id="error-message"></p>
+                    <div>
+                        <label for="jenis" class="block text-sm font-medium text-gray-700">Jenis Pekerjaan</label>
+                        <input type="text" id="jenis" name="jenis" placeholder="Contoh: Desain Grafis, Coding" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                     </div>
-                    <div class="overflow-x-auto">
-                        <table id="kinerja-table" class="min-w-full divide-y divide-gray-200 hidden">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kinerja</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File</th>
-                                </tr>
-                            </thead>
-                            <tbody id="kinerja-table-body" class="bg-white divide-y divide-gray-200">
-                                <!-- Data akan diisi oleh JavaScript -->
-                            </tbody>
-                        </table>
+                    <div>
+                        <label for="kinerja" class="block text-sm font-medium text-gray-700">Detail Kinerja</label>
+                        <textarea id="kinerja" name="kinerja" rows="4" placeholder="Jelaskan pekerjaan yang dilakukan..." required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label for="file" class="block text-sm font-medium text-gray-700">Link File (Google Drive)</label>
+                        <input type="url" id="file" name="file" placeholder="https://docs.google.com/..." class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                        <select id="status" name="status" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <option>Baru</option><option>Dalam Proses</option><option>Selesai</option><option>Revisi</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button type="submit" id="submit-button" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Simpan Kinerja</button>
                     </div>
                 </div>
-
-            </main>
+            </form>
         </div>
     </div>
+    
+    <!-- Konten Utama (Awalnya Tersembunyi) -->
+    <div id="main-content" class="hidden container mx-auto max-w-7xl">
+        
+        <!-- Header Modern -->
+        <header class="bg-white shadow-sm rounded-b-xl p-4 md:p-6 mb-8 sticky top-0 z-10">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">fsOS Dashboard</h1>
+                    <p class="text-sm md:text-base text-gray-500">Selamat datang kembali, Ferdy.</p>
+                </div>
+                <a href="index.html" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors text-sm">Beranda</a>
+            </div>
+        </header>
+
+        <!-- Tabel Data (100% Halaman) -->
+        <main class="bg-white p-4 md:p-6 rounded-xl shadow-md">
+            <h2 class="text-2xl font-semibold mb-4 border-b pb-3">Daftar Kinerja</h2>
+            <div id="loading" class="text-center py-8">
+                <p class="text-gray-500">Menunggu verifikasi...</p>
+            </div>
+            <div id="error" class="hidden text-center py-8 bg-red-50 p-4 rounded-lg">
+                <p class="text-red-600 font-semibold">Gagal memuat data!</p>
+                <p class="text-red-500 text-sm mt-1" id="error-message"></p>
+            </div>
+            <div class="overflow-x-auto">
+                <table id="kinerja-table" class="min-w-full divide-y divide-gray-200 hidden">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kinerja</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kinerja-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- Floating Button untuk Tambah Data -->
+    <button id="add-data-button" class="hidden fixed bottom-6 right-6 bg-indigo-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-all transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 z-20">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+    </button>
     
     <script src="admin.js" defer></script>
 </body>
