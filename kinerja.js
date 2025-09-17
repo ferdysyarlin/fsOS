@@ -64,7 +64,7 @@ export function init(dataFromCache) {
     statusFilter = document.getElementById('status-filter');
     monthFilter = document.getElementById('month-filter');
     yearFilter = document.getElementById('year-filter');
-    resetFilterButton = document.getElementById('reset-filter-button');
+    resetFilterButton = document.querySelector('#list-view #reset-filter-button'); 
     mobileFilterButton = document.getElementById('mobile-filter-button');
     mobileFilterModal = document.getElementById('mobile-filter-modal');
     closeMobileFilterButton = document.getElementById('close-mobile-filter-button');
@@ -81,7 +81,8 @@ export function init(dataFromCache) {
     addDataButton = document.getElementById('add-data-button');
     resetFilterButtonMobile = document.getElementById('reset-filter-button-mobile');
 
-    // Pasang semua Event Listener
+
+    // Memasang Event Listeners
     if(addDataButton) addDataButton.addEventListener('click', openCreateForm);
     if(listView) listView.addEventListener('click', handleBodyClick); 
     if(closeFormModalButton) closeFormModalButton.addEventListener('click', closeFormModal);
@@ -341,12 +342,19 @@ async function handleFormSubmit(e) {
     e.preventDefault();
     submitButton.disabled = true;
     submitButton.textContent = 'Menyimpan...';
-    const data = Object.fromEntries(new FormData(form).entries());
+    let data = Object.fromEntries(new FormData(form).entries());
     data.files = fileData;
-    data.action = currentlyEditingId ? 'update' : 'create';
+    const action = currentlyEditingId ? 'update' : 'create';
+    data.action = action;
+    
+    // *** PERBAIKAN BUG ***
+    if (action === 'create') {
+        data.Pin = false; // Pastikan data baru memiliki properti Pin
+        // Properti Warna sudah diambil dari form, jadi tidak perlu ditambahkan
+    }
     
     if (data.action === 'create') {
-        const optimisticData = { ...data, Tanggal: data.Tanggal.split('-').reverse().join('/'), File: '[]', Pin: false, Warna: data.Warna };
+        const optimisticData = { ...data, Tanggal: data.Tanggal.split('-').reverse().join('/'), File: '[]' };
         localData.unshift(optimisticData);
         applyAndRenderFilters();
     }
