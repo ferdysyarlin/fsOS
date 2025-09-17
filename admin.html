@@ -107,34 +107,18 @@
             <form id="kinerja-form" class="w-full max-w-lg bg-white rounded-lg shadow-xl p-6 space-y-6">
                 <input type="hidden" id="id-kinerja" name="ID Kinerja">
                 
-                <div>
-                    <label for="tanggal" class="block text-sm font-medium leading-6 text-gray-900">Tanggal</label>
-                    <div class="mt-2">
-                        <input type="date" name="Tanggal" id="tanggal" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" required>
-                    </div>
-                </div>
+                <input type="date" name="Tanggal" id="tanggal" class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" required>
+
+                <textarea id="deskripsi" name="Deskripsi" rows="3" placeholder="Deskripsi Kinerja..." class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" required></textarea>
 
                 <div>
-                    <label for="deskripsi" class="block text-sm font-medium leading-6 text-gray-900">Deskripsi Kinerja</label>
-                    <div class="mt-2">
-                        <textarea id="deskripsi" name="Deskripsi" rows="3" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" required></textarea>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium leading-6 text-gray-900">Status</label>
                     <input type="hidden" id="status-input" name="Status" value="Hadir">
-                    <div id="status-container" class="mt-2 grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    <div id="status-container" class="grid grid-cols-3 sm:grid-cols-6 gap-2">
                         <!-- Tombol Status akan dibuat oleh JavaScript -->
                     </div>
                 </div>
 
-                <div>
-                    <label for="file-upload" class="block text-sm font-medium leading-6 text-gray-900">Unggah File (Opsional)</label>
-                    <div class="mt-2">
-                         <input type="file" name="file-upload" id="file-upload" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100">
-                    </div>
-                </div>
+                <input type="file" name="file-upload" id="file-upload" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100">
 
                 <div class="flex items-center justify-end gap-x-4 pt-4">
                     <button type="button" id="close-form-modal" class="text-sm font-semibold leading-6 text-gray-900">Batal</button>
