@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - fsOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,64 +21,61 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px;}
         ::-webkit-scrollbar-thumb:hover { background: #555; }
-        /* Style untuk item yang aktif di daftar */
         .active-item {
-            background-color: #eef2ff !important; /* bg-indigo-50 */
-            border-left: 4px solid #4f46e5; /* border-indigo-600 */
+            background-color: #eef2ff !important;
+            border-left: 4px solid #4f46e5;
         }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <!-- Modal Verifikasi PIN (Diperbarui) -->
+    <!-- Modal Verifikasi PIN -->
     <div id="pin-modal-overlay" class="fixed inset-0 bg-white flex items-center justify-center z-50 transition-opacity duration-300">
-        <div id="pin-modal-content" class="w-full max-w-sm p-4 transition-transform duration-300">
-            <div class="flex items-center gap-2">
+        <div id="pin-modal-content" class="w-full max-w-sm p-4">
+             <div class="flex items-center gap-2">
                 <form id="pin-form" class="flex items-center gap-2 w-full">
-                    <input type="password" id="pin-input" autocomplete="current-password" required class="bg-white text-gray-900 placeholder-gray-400 text-center tracking-widest text-lg w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" style="letter-spacing: 0.5em;">
+                    <input type="password" id="pin-input" autocomplete="current-password" required class="bg-white text-gray-900 text-center tracking-widest text-lg w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none transition" style="letter-spacing: 0.5em;">
                     <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-lg transition duration-200 flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                        <i data-lucide="arrow-right"></i>
                     </button>
                 </form>
                 <a href="index.html" class="bg-gray-200 hover:bg-gray-300 text-gray-700 p-3 rounded-lg transition duration-200 flex-shrink-0" aria-label="Kembali ke Beranda">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    <i data-lucide="home"></i>
                 </a>
             </div>
             <p id="pin-error" class="text-red-500 text-sm mt-3 text-center"></p>
         </div>
     </div>
 
-    <!-- Kontainer Utama (Diperbarui untuk Split View) -->
+    <!-- Kontainer Utama -->
     <div id="main-container" class="hidden">
         <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-30 shadow-sm">
             <div class="w-full mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
                     <span class="text-xl font-bold text-indigo-600">fsOS</span>
                     <a href="index.html" class="p-2 rounded-full hover:bg-gray-100 transition">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <i data-lucide="home"></i>
                     </a>
                 </div>
             </div>
         </header>
 
-        <div class="flex flex-col md:flex-row">
-            <!-- Tampilan Daftar -->
-            <div id="list-view" class="w-full md:w-1/2 md:border-r md:border-gray-200">
+        <div id="content-wrapper" class="flex flex-col md:flex-row">
+            <div id="list-view" class="w-full md:border-r md:border-gray-200 transition-all duration-300">
                 <main class="w-full mx-auto p-4 sm:p-6 lg:p-8">
                     <div id="loading" class="text-center py-10"></div>
                     <div id="error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert">
                         <strong class="font-bold">Gagal memuat!</strong>
-                        <span class="block sm:inline" id="error-message">Terjadi kesalahan.</span>
+                        <span class="block sm:inline" id="error-message"></span>
                     </div>
-                    
                     <div class="hidden sm:block bg-white rounded-xl shadow-md overflow-hidden">
                         <table id="kinerja-table" class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th scope="col" class="relative px-4 py-3"><span class="sr-only">Aksi</span></th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="relative px-4 py-3"><span class="sr-only">Aksi</span></th>
                                 </tr>
                             </thead>
                             <tbody id="kinerja-table-body" class="bg-white divide-y divide-gray-200"></tbody>
@@ -86,36 +84,56 @@
                     <div id="card-container" class="sm:hidden grid grid-cols-1 gap-4"></div>
                 </main>
             </div>
-
-            <!-- Tampilan Detail (Sekarang di Samping) -->
-            <div id="detail-view" class="w-full md:w-1/2 hidden md:block">
-                 <main class="sticky top-16"><!-- Membuatnya tetap saat scroll -->
-                    <div id="detail-content-wrapper" class="p-4 sm:p-6 lg:p-8">
-                        <div id="detail-placeholder" class="flex flex-col items-center justify-center text-center text-gray-400 h-[calc(100vh-10rem)]">
-                             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mb-4"><path d="M2.5 2v6h6M21.5 22v-6h-6"/><path d="M22 11.5A10 10 0 0 0 3.5 12.5"/><path d="M2 12.5a10 10 0 0 0 18.5-1"/></svg>
-                             <p class="font-medium">Pilih item dari daftar</p>
-                             <p class="text-sm">untuk melihat detailnya di sini.</p>
-                        </div>
-                        <div id="detail-content" class="hidden bg-white rounded-xl shadow-md overflow-hidden p-6 space-y-5">
-                            <!-- Konten detail akan diisi oleh JavaScript -->
-                        </div>
+            <div id="detail-view" class="w-full hidden md:w-1/2 transition-all duration-300">
+                 <main class="sticky top-16">
+                    <div class="p-4 sm:p-6 lg:p-8">
+                        <div id="detail-content" class="bg-white rounded-xl shadow-md overflow-hidden p-6 space-y-5"></div>
                     </div>
                  </main>
             </div>
         </div>
     </div>
 
-    <!-- Tombol Tambah & Modal (Tetap sama) -->
+    <!-- Tombol Tambah -->
     <button id="add-data-button" class="hidden fixed bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full p-4 shadow-lg transition transform hover:scale-110 z-20">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <i data-lucide="plus"></i>
     </button>
     
-    <div id="form-modal-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-40 transition-opacity duration-300">
-        <!-- Konten Modal Form (Tidak Berubah) -->
+    <!-- Modal Form -->
+    <div id="form-modal-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center p-4 z-40 transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg transform transition-all duration-300 scale-95" id="form-modal-content">
+            <form id="kinerja-form" class="p-6 space-y-4">
+                <input type="hidden" id="id-kinerja" name="ID Kinerja">
+                <input type="date" id="tanggal" name="Tanggal" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Tanggal">
+                <textarea id="deskripsi" name="Deskripsi" rows="4" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Deskripsi Kinerja..."></textarea>
+                <div id="status-container" class="flex flex-wrap gap-2"></div>
+                <input type="hidden" id="status-input" name="Status">
+                <div>
+                    <input type="file" id="file-input" class="hidden">
+                    <label for="file-input" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        <span id="file-name">Pilih file (opsional)</span>
+                    </label>
+                    <p id="file-lama" class="text-xs text-gray-500 mt-1"></p>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" id="close-form-modal" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Batal</button>
+                    <button type="submit" id="submit-button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Simpan Kinerja</button>
+                </div>
+            </form>
+        </div>
     </div>
     
-    <div id="delete-modal-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-50">
-       <!-- Konten Modal Delete (Tidak Berubah) -->
+    <!-- Modal Delete -->
+    <div id="delete-modal-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center p-4 z-50">
+       <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+            <h3 class="text-lg font-medium text-gray-900">Hapus Kinerja?</h3>
+            <p class="mt-2 text-sm text-gray-500">Apakah Anda yakin ingin menghapus data ini? Aksi ini tidak dapat dibatalkan.</p>
+            <div class="mt-4 flex justify-end gap-3">
+                <button type="button" id="cancel-delete-button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Batal</button>
+                <button type="button" id="confirm-delete-button" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Hapus</button>
+            </div>
+        </div>
     </div>
 
     <script src="admin.js"></script>
