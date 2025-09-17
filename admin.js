@@ -8,6 +8,8 @@ let fileData = [];
 let currentlyEditingId = null;
 let activeDetailId = null;
 const statusOptions = ['Hadir', 'Lembur', 'Cuti', 'Dinas', 'Sakit', 'ST'];
+const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
 
 // --- Elemen DOM ---
 const pinModalOverlay = document.getElementById('pin-modal-overlay');
@@ -40,6 +42,7 @@ const deleteModalOverlay = document.getElementById('delete-modal-overlay');
 const cancelDeleteButton = document.getElementById('cancel-delete-button');
 const confirmDeleteButton = document.getElementById('confirm-delete-button');
 const searchInput = document.getElementById('search-input');
+const searchInputMobile = document.getElementById('search-input-mobile');
 const statusFilter = document.getElementById('status-filter');
 const monthFilter = document.getElementById('month-filter');
 const yearFilter = document.getElementById('year-filter');
@@ -50,7 +53,7 @@ const reloadDataButton = document.getElementById('reload-data-button');
 
 function handlePinSubmit(e) {
     e.preventDefault();
-    const pinModalContent = document.getElementById('pin-modal-content');
+    const pinModalContent = pinModalOverlay.querySelector('div');
     if (pinInput.value === CORRECT_PIN) {
         pinModalOverlay.classList.add('opacity-0', 'pointer-events-none');
         mainContainer.classList.remove('hidden');
@@ -128,9 +131,6 @@ function renderDetail(data) {
 function handleBodyClick(e) {
     const target = e.target;
     const itemElement = target.closest('[data-id]');
-    const formModalContent = formModalOverlay.querySelector('div');
-
-    if (target === closeFormModalButton || (!formModalContent.contains(target) && target === formModalOverlay)) closeFormModal();
     
     if (!itemElement) return;
     const id = itemElement.getAttribute('data-id');
@@ -165,7 +165,7 @@ function renderData(dataToRender) {
     cardContainer.innerHTML = '';
     if (dataToRender.length === 0) {
         const emptyMessage = '<p class="col-span-full text-center py-10 text-gray-500">Tidak ada data yang cocok dengan filter.</p>';
-        tableBody.innerHTML = `<tr><td colspan="4">${emptyMessage}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="5">${emptyMessage}</td></tr>`;
         cardContainer.innerHTML = emptyMessage;
         return;
     }
@@ -182,11 +182,14 @@ function createTableRow(item) {
     row.className = 'hover:bg-gray-50';
     row.setAttribute('data-id', item['ID Kinerja']);
     row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap data-cell cursor-pointer">
+            ${getPreviewThumbnail(item.File)}
+        </td>
         <td class="px-6 py-4 whitespace-nowrap data-cell cursor-pointer"><div class="text-sm font-medium text-gray-900">${item.Tanggal || 'N/A'}</div></td>
         <td class="px-6 py-4 data-cell cursor-pointer"><div class="text-sm text-gray-700 truncate" style="max-width: 300px;">${item.Deskripsi || ''}</div></td>
         <td class="px-6 py-4 whitespace-nowrap data-cell cursor-pointer">${getStatusBadge(item.Status)}</td>
         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-right">
-            <div class="flex items-center justify-end gap-1">${getFileIcon(item.File)}
+            <div class="flex items-center justify-end gap-1">
                 <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn"><i data-lucide="pencil" class="w-5 h-5"></i></button>
                 <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
             </div>
@@ -199,11 +202,14 @@ function createCardView(item) {
     card.className = 'bg-white rounded-xl shadow-md p-4 space-y-3';
     card.setAttribute('data-id', item['ID Kinerja']);
     card.innerHTML = `
-        <div class="data-cell cursor-pointer">
-            <div class="flex justify-between items-start"><p class="text-sm font-semibold text-gray-800">${item.Deskripsi || 'Tanpa Deskripsi'}</p>${getStatusBadge(item.Status)}</div>
-            <p class="text-xs text-gray-500 mt-1">${item.Tanggal || 'N/A'}</p>
+        <div class="data-cell cursor-pointer flex gap-4">
+            ${getPreviewThumbnail(item.File)}
+            <div class="flex-1">
+                <div class="flex justify-between items-start"><p class="text-sm font-semibold text-gray-800">${item.Deskripsi || 'Tanpa Deskripsi'}</p>${getStatusBadge(item.Status)}</div>
+                <p class="text-xs text-gray-500 mt-1">${item.Tanggal || 'N/A'}</p>
+            </div>
         </div>
-        <div class="border-t border-gray-100 pt-3 flex items-center justify-end gap-2">${getFileIcon(item.File)}
+        <div class="border-t border-gray-100 pt-3 flex items-center justify-end gap-2">
             <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn"><i data-lucide="pencil" class="w-5 h-5"></i></button>
             <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
         </div>`;
@@ -365,12 +371,22 @@ function getStatusBadge(status) {
     return `<span class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(status)}">${status || ''}</span>`;
 }
 
-function getFileIcon(fileJson) {
+function getPreviewThumbnail(fileJson) {
     let files = [];
-    try { if (fileJson) files = JSON.parse(fileJson); } catch (e) {}
-    if (files.length > 0) return `<span class="p-2 text-indigo-600 cursor-pointer"><i data-lucide="files" class="w-5 h-5"></i></span>`;
-    return `<span class="p-2 text-gray-400 cursor-not-allowed"><i data-lucide="file-x" class="w-5 h-5"></i></span>`;
+    try { if (fileJson) files = JSON.parse(fileJson); } catch(e) {}
+    
+    const firstImage = files.find(f => f.type.startsWith('image/'));
+
+    if (firstImage) {
+        const thumbnailUrl = createThumbnailUrl(firstImage.url);
+        return `<img src="${thumbnailUrl}" class="w-10 h-10 rounded-md object-cover border" loading="lazy">`;
+    }
+    
+    return `<div class="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center text-gray-400">
+                <i data-lucide="file-text" class="w-5 h-5"></i>
+            </div>`;
 }
+
 
 function createEmbedUrl(originalUrl) {
     const match = originalUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/);
@@ -437,12 +453,19 @@ function populateFilters() {
     const years = [...new Set(localData.map(item => item.Tanggal.split('/')[2]))].sort((a,b) => b-a);
     yearFilter.innerHTML = '<option value="">Semua Tahun</option>';
     years.forEach(year => yearFilter.innerHTML += `<option value="${year}">${year}</option>`);
+    
     statusFilter.innerHTML = '<option value="">Semua Status</option>';
     statusOptions.forEach(status => statusFilter.innerHTML += `<option value="${status}">${status}</option>`);
+
+    monthFilter.innerHTML = '<option value="">Semua Bulan</option>';
+    monthNames.forEach((name, index) => {
+        const monthValue = String(index + 1).padStart(2, '0');
+        monthFilter.innerHTML += `<option value="${monthValue}">${name}</option>`;
+    });
 }
 
 function applyAndRenderFilters() {
-    const searchTerm = searchInput.value.toLowerCase();
+    const searchTerm = searchInput.value.toLowerCase() || searchInputMobile.value.toLowerCase();
     const status = statusFilter.value;
     const month = monthFilter.value;
     const year = yearFilter.value;
@@ -459,6 +482,7 @@ function applyAndRenderFilters() {
 
 function resetFilters() {
     searchInput.value = '';
+    searchInputMobile.value = '';
     statusFilter.value = '';
     monthFilter.value = '';
     yearFilter.value = '';
@@ -472,12 +496,13 @@ document.addEventListener('DOMContentLoaded', () => {
     pinForm.addEventListener('submit', handlePinSubmit);
     addDataButton.addEventListener('click', openCreateForm);
     document.body.addEventListener('click', handleBodyClick);
+    closeFormModalButton.addEventListener('click', closeFormModal);
     cancelDeleteButton.addEventListener('click', () => deleteModalOverlay.classList.add('hidden'));
     confirmDeleteButton.addEventListener('click', executeDelete);
     form.addEventListener('submit', handleFormSubmit);
     fileInput.addEventListener('change', handleFileSelect);
     resetFilterButton.addEventListener('click', resetFilters);
     reloadDataButton.addEventListener('click', fetchData);
-    [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
+    [searchInput, searchInputMobile, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
 });
 
