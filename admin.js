@@ -18,11 +18,11 @@ const colorOptions = {
     'purple': 'border-purple-400',
 };
 const colorClasses = {
-    'blue': 'bg-blue-400 ring-blue-500',
-    'green': 'bg-green-400 ring-green-500',
-    'yellow': 'bg-yellow-400 ring-yellow-500',
-    'red': 'bg-red-400 ring-red-500',
-    'purple': 'bg-purple-400 ring-purple-500',
+    'blue': 'bg-blue-400',
+    'green': 'bg-green-400',
+    'yellow': 'bg-yellow-400',
+    'red': 'bg-red-400',
+    'purple': 'bg-purple-400',
 }
 
 // --- Elemen DOM ---
@@ -220,9 +220,9 @@ function createTableRow(item) {
         <td class="px-6 py-4 whitespace-nowrap data-cell cursor-pointer">${getStatusBadge(item.Status)}</td>
         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-right">
             <div class="flex items-center justify-end gap-1">
-                <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition pin-btn">${pinIcon}</button>
-                <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn"><i data-lucide="pencil" class="w-5 h-5"></i></button>
-                <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition pin-btn" title="Sematkan">${pinIcon}</button>
+                <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn" title="Ubah"><i data-lucide="pencil" class="w-5 h-5"></i></button>
+                <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn" title="Hapus"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
             </div>
         </td>`;
     tableBody.appendChild(row);
@@ -240,7 +240,7 @@ function createCardView(item) {
    card.innerHTML = `
         <div class="data-cell cursor-pointer flex-1 flex items-center gap-4">
             ${getPreviewThumbnail(item.File)}
-            <div class="flex-1">
+            <div class="flex-1 min-w-0">
                 <div class="flex justify-between items-start">
                     <p class="text-sm font-semibold text-gray-800 whitespace-pre-wrap max-h-16 overflow-y-auto">${item.Deskripsi || 'Tanpa Deskripsi'}</p>
                     <div class="flex-shrink-0 ml-2">${getStatusBadge(item.Status)}</div>
@@ -249,9 +249,9 @@ function createCardView(item) {
             </div>
         </div>
         <div class="flex flex-col gap-1">
-            <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition pin-btn">${pinIcon}</button>
-            <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn"><i data-lucide="pencil" class="w-5 h-5"></i></button>
-            <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+            <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition pin-btn" title="Sematkan">${pinIcon}</button>
+            <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn" title="Ubah"><i data-lucide="pencil" class="w-5 h-5"></i></button>
+            <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn" title="Hapus"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
         </div>`;
     cardContainer.appendChild(card);
 }
@@ -267,6 +267,7 @@ function openCreateForm() {
     setActiveStatus('Hadir');
     setActiveColor('default');
     formModalOverlay.classList.remove('hidden');
+    formModalOverlay.querySelector('div').classList.add('scale-100');
 }
 
 function openEditForm(id) {
@@ -287,9 +288,16 @@ function openEditForm(id) {
     setActiveStatus(item.Status || 'Hadir');
     setActiveColor(item.Warna || 'default');
     formModalOverlay.classList.remove('hidden');
+    formModalOverlay.querySelector('div').classList.add('scale-100');
 }
 
-function closeFormModal() { formModalOverlay.classList.add('hidden'); }
+function closeFormModal() { 
+    const modal = formModalOverlay.querySelector('div');
+    modal.classList.remove('scale-100');
+    setTimeout(() => {
+        formModalOverlay.classList.add('hidden');
+    }, 150);
+}
 
 async function handleFormSubmit(e) {
     e.preventDefault();
@@ -311,7 +319,7 @@ async function handleFormSubmit(e) {
         else throw new Error(response.message || 'Gagal menyimpan data.');
     } catch (error) {
         showError(error.message);
-        fetchData(); // Re-fetch to sync with server on error
+        fetchData();
     } finally {
         submitButton.disabled = false;
         submitButton.textContent = 'Simpan Kinerja';
@@ -576,7 +584,9 @@ function setActiveColor(activeColor) {
         const btnColor = btn.dataset.color;
         const ringColorClass = colorClasses[btnColor] ? colorClasses[btnColor].split(' ')[1] : 'ring-gray-400';
         btn.classList.toggle('selected', btnColor === activeColor);
-        btn.style.setProperty('--tw-ring-color', `var(--tw-color-${ringColor.split('-')[0]}-${ringColor.split('-')[1]})`);
+        if(btn.classList.contains('selected')) {
+            btn.style.setProperty('--ring-color', colorClasses[btnColor].split(' ')[0].replace('bg', 'border'));
+        }
     });
 }
 
