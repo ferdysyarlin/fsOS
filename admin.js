@@ -1,366 +1,415 @@
-// --- Konfigurasi ---
+// --- PENTING: Ganti dengan URL dan PIN Anda ---
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyuU4KcMdyg89zW2N-0XNbu3RZOM9ADKPVFSQ8T7HmWr-7w2x1CUjH7UdNIJy7LdUSqDg/exec';
-const CORRECT_PIN = '1234';
+const CORRECT_PIN = '1234'; // Ganti dengan PIN 4 digit rahasia Anda
 
 // --- Variabel Global ---
 let localData = [];
+let fileData = null; // { base64Data, fileName, mimeType }
+let currentlyEditingId = null;
 const statusOptions = ['Hadir', 'Lembur', 'Cuti', 'Dinas', 'Sakit', 'ST'];
 
 // --- Elemen DOM ---
 const pinModalOverlay = document.getElementById('pin-modal-overlay');
+const pinForm = document.getElementById('pin-form');
+const pinInput = document.getElementById('pin-input');
+const pinError = document.getElementById('pin-error');
 const mainContent = document.getElementById('main-content');
 const addDataButton = document.getElementById('add-data-button');
-const formModalOverlay = document.getElementById('form-modal-overlay');
-const form = document.getElementById('kinerja-form');
-const submitButton = document.getElementById('submit-button');
-const tableBody = document.getElementById('kinerja-table-body');
-const cardContainer = document.getElementById('kinerja-card-container');
 const loadingDiv = document.getElementById('loading');
 const errorDiv = document.getElementById('error');
-const statusContainer = document.getElementById('status-container');
-const idKinerjaInput = document.getElementById('id-kinerja');
-const formActionInput = document.getElementById('form-action');
+const errorMessageP = document.getElementById('error-message');
+const tableBody = document.getElementById('kinerja-table-body');
+const cardContainer = document.getElementById('card-container');
 
-// --- Inisialisasi ---
+// Elemen Form Modal
+const formModalOverlay = document.getElementById('form-modal-overlay');
+const closeFormModalButton = document.getElementById('close-form-modal');
+const form = document.getElementById('kinerja-form');
+const submitButton = document.getElementById('submit-button');
+const idKinerjaInput = document.getElementById('id-kinerja');
+const tanggalInput = document.getElementById('tanggal');
+const deskripsiInput = document.getElementById('deskripsi');
+const statusContainer = document.getElementById('status-container');
+const statusInput = document.getElementById('status-input');
+const fileInput = document.getElementById('file-input');
+const fileNameSpan = document.getElementById('file-name');
+const fileLamaP = document.getElementById('file-lama');
+
+// Elemen Delete Modal
+const deleteModalOverlay = document.getElementById('delete-modal-overlay');
+const cancelDeleteButton = document.getElementById('cancel-delete-button');
+const confirmDeleteButton = document.getElementById('confirm-delete-button');
+
+// --- Inisialisasi Aplikasi ---
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
-    initializeStatusButtons();
+    renderStatusButtons();
 });
 
 function setupEventListeners() {
-    // Verifikasi PIN
-    document.getElementById('pin-form').addEventListener('submit', handlePinSubmit);
-
-    // Buka form tambah
-    addDataButton.addEventListener('click', handleAddClick);
-
-    // Tutup form
-    document.getElementById('close-form-modal').addEventListener('click', () => formModalOverlay.classList.add('hidden'));
-
-    // Submit form (Create/Update)
+    pinForm.addEventListener('submit', handlePinSubmit);
+    addDataButton.addEventListener('click', openCreateForm);
+    closeFormModalButton.addEventListener('click', closeFormModal);
+    formModalOverlay.addEventListener('click', (e) => e.target === formModalOverlay && closeFormModal());
     form.addEventListener('submit', handleFormSubmit);
-
-    // Klik tombol status
-    statusContainer.addEventListener('click', handleStatusClick);
-
-    // Klik tombol aksi (Edit/Delete)
-    mainContent.addEventListener('click', handleActionClick);
+    fileInput.addEventListener('change', handleFileSelect);
+    
+    // Event listener untuk tombol Edit, Hapus, dan Lihat Detail
+    mainContent.addEventListener('click', handleMainContentClick);
+    
+    // Event listener untuk modal hapus
+    cancelDeleteButton.addEventListener('click', () => deleteModalOverlay.classList.add('hidden'));
+    confirmDeleteButton.addEventListener('click', executeDelete);
 }
-
-// --- Handler Event ---
 
 function handlePinSubmit(e) {
     e.preventDefault();
-    const pinInput = document.getElementById('pin-input');
+    pinError.textContent = '';
     if (pinInput.value === CORRECT_PIN) {
         pinModalOverlay.classList.add('opacity-0', 'pointer-events-none');
         mainContent.classList.remove('hidden');
         addDataButton.classList.remove('hidden');
         fetchData();
     } else {
-        const pinError = document.getElementById('pin-error');
-        const pinModalContent = document.getElementById('pin-modal-content');
         pinError.textContent = 'PIN salah, coba lagi.';
-        pinModalContent.classList.add('shake');
+        pinForm.querySelector('div, input').classList.add('shake');
         pinInput.value = '';
-        setTimeout(() => pinModalContent.classList.remove('shake'), 500);
+        setTimeout(() => pinForm.querySelector('div, input').classList.remove('shake'), 500);
     }
 }
 
-function handleAddClick() {
+// --- Logika Data (Fetch, Render, dkk) ---
+async function fetchData() {
+    showLoading();
+    try {
+        const response = await fetch(GAS_WEB_APP_URL);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        localData = data;
+        renderData();
+        hideLoading();
+    } catch (error) {
+        showError(error.message);
+    }
+}
+
+function renderData() {
+    tableBody.innerHTML = '';
+    cardContainer.innerHTML = '';
+
+    if (localData.length === 0) {
+        const emptyMessage = '<p class="col-span-full text-center py-10 text-gray-500">Belum ada data kinerja.</p>';
+        tableBody.innerHTML = `<tr><td colspan="4">${emptyMessage}</td></tr>`;
+        cardContainer.innerHTML = emptyMessage;
+        return;
+    }
+
+    localData.forEach(item => {
+        createTableRow(item);
+        createCardView(item);
+    });
+}
+
+function createTableRow(item) {
+    const row = document.createElement('tr');
+    row.className = 'hover:bg-gray-50';
+    row.setAttribute('data-id', item['ID Kinerja']);
+
+    const isClickable = true; // Bisa ditambahkan logika jika perlu
+
+    row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap data-cell ${isClickable ? 'cursor-pointer' : ''}">
+            <div class="text-sm font-medium text-gray-900">${item.Tanggal || 'N/A'}</div>
+        </td>
+        <td class="px-6 py-4 data-cell ${isClickable ? 'cursor-pointer' : ''}">
+            <div class="text-sm text-gray-700 truncate" style="max-width: 300px;">${item.Deskripsi || ''}</div>
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap data-cell ${isClickable ? 'cursor-pointer' : ''}">
+            ${getStatusBadge(item.Status)}
+        </td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
+            <div class="flex items-center justify-end gap-2">
+                ${getFileIcon(item.File)}
+                <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                </button>
+            </div>
+        </td>
+    `;
+    tableBody.appendChild(row);
+}
+
+function createCardView(item) {
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-xl shadow-md p-4 space-y-3';
+    card.setAttribute('data-id', item['ID Kinerja']);
+
+    card.innerHTML = `
+        <div class="data-cell cursor-pointer">
+            <div class="flex justify-between items-start">
+                <p class="text-sm font-semibold text-gray-800">${item.Deskripsi || 'Tanpa Deskripsi'}</p>
+                ${getStatusBadge(item.Status)}
+            </div>
+            <p class="text-xs text-gray-500 mt-1">${item.Tanggal || 'N/A'}</p>
+        </div>
+        <div class="border-t border-gray-100 pt-3 flex items-center justify-end gap-2">
+            ${getFileIcon(item.File)}
+            <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            </button>
+        </div>
+    `;
+    cardContainer.appendChild(card);
+}
+
+// --- Logika Form ---
+function openCreateForm() {
+    currentlyEditingId = null;
     form.reset();
-    submitButton.textContent = 'Simpan Kinerja';
-    document.getElementById('current-file').textContent = '';
-    formActionInput.value = 'create';
-    idKinerjaInput.value = createKinerjaId();
-    document.getElementById('tanggal').valueAsDate = new Date();
-    updateStatusSelection('Hadir');
+    idKinerjaInput.value = generateId();
+    tanggalInput.valueAsDate = new Date();
+    fileData = null;
+    fileNameSpan.textContent = 'Pilih file (opsional)';
+    fileLamaP.textContent = '';
+    setActiveStatus('Hadir');
     formModalOverlay.classList.remove('hidden');
+    formModalOverlay.querySelector('div').classList.add('scale-100');
+}
+
+function openEditForm(id) {
+    const item = localData.find(d => d['ID Kinerja'] === id);
+    if (!item) return;
+
+    currentlyEditingId = id;
+    form.reset();
+    idKinerjaInput.value = item['ID Kinerja'];
+    tanggalInput.value = item.Tanggal ? item.Tanggal.split('/').reverse().join('-') : '';
+    deskripsiInput.value = item.Deskripsi || '';
+    fileData = null;
+    fileNameSpan.textContent = 'Pilih file baru (opsional)';
+    fileLamaP.textContent = item.File ? `File saat ini: ${item.File.split('/').pop()}` : 'Tidak ada file terunggah.';
+    setActiveStatus(item.Status || 'Hadir');
+    
+    formModalOverlay.classList.remove('hidden');
+    formModalOverlay.querySelector('div').classList.add('scale-100');
+}
+
+function closeFormModal() {
+    const modalContent = formModalOverlay.querySelector('div');
+    modalContent.classList.remove('scale-100');
+    setTimeout(() => formModalOverlay.classList.add('hidden'), 200);
 }
 
 async function handleFormSubmit(e) {
     e.preventDefault();
+    submitButton.disabled = true;
+    submitButton.textContent = 'Menyimpan...';
+
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
-    const action = data.action;
-
-    // Optimistic UI
+    data.file = fileData;
+    
+    const action = currentlyEditingId ? 'update' : 'create';
+    data.action = action;
+    
     if (action === 'create') {
-        const newRow = createTableRow(data);
-        const newCard = createCard(data);
-        tableBody.insertAdjacentHTML('afterbegin', newRow);
-        cardContainer.insertAdjacentHTML('afterbegin', newCard);
-        document.getElementById(`row-${data['ID Kinerja']}`).classList.add('new-row-highlight');
-        document.getElementById(`card-${data['ID Kinerja']}`).classList.add('new-row-highlight');
-    } else { // update
-        updateUI(data, true); // Update UI locally first
+        // Optimistic UI: Add to local data immediately
+        const optimisticData = { ...data };
+        optimisticData.Tanggal = data.Tanggal.split('-').reverse().join('/');
+        optimisticData.File = 'Mengunggah...';
+        localData.unshift(optimisticData);
+        renderData();
     }
     
-    formModalOverlay.classList.add('hidden');
-    submitButton.disabled = true;
-
+    closeFormModal();
+    
     try {
-        const file = document.getElementById('file-upload').files[0];
-        let fileData = null;
-        if (file) {
-            fileData = await readFileAsBase64(file);
-        }
-        const response = await sendDataToServer({ ...data, file: fileData });
-        
+        const response = await sendDataToServer(data);
         if (response.status === 'success') {
-            updateUI(response.savedData); // Sync with final server data
-            localData = localData.map(item => item['ID Kinerja'] === response.savedData['ID Kinerja'] ? response.savedData : item);
-            if(action === 'create') localData.unshift(response.savedData);
+            updateLocalData(response.savedData);
         } else {
-            throw new Error(response.message);
+            throw new Error(response.message || 'Gagal menyimpan data.');
         }
-
     } catch (error) {
-        console.error('Gagal menyimpan data:', error);
-        alert('Gagal menyimpan data. Memuat ulang data untuk konsistensi.');
-        fetchData(); // Revert on failure by refetching
+        showError(error.message);
+        // Rollback optimistic update if server fails
+        fetchData();
     } finally {
         submitButton.disabled = false;
-        form.reset();
+        submitButton.textContent = 'Simpan Kinerja';
     }
 }
 
-function handleStatusClick(e) {
-    if (e.target.matches('.status-btn')) {
-        updateStatusSelection(e.target.dataset.value);
+// --- Logika Hapus ---
+function openDeleteModal(id) {
+    confirmDeleteButton.setAttribute('data-id', id);
+    deleteModalOverlay.classList.remove('hidden');
+}
+
+function executeDelete() {
+    const id = confirmDeleteButton.getAttribute('data-id');
+    if (!id) return;
+
+    const originalData = [...localData];
+    localData = localData.filter(item => item['ID Kinerja'] !== id);
+    renderData();
+    deleteModalOverlay.classList.add('hidden');
+    
+    sendDataToServer({ 'ID Kinerja': id, action: 'delete' })
+        .catch(error => {
+            showError(`Gagal menghapus: ${error.message}`);
+            localData = originalData; // Rollback
+            renderData();
+        });
+}
+
+
+// --- Interaksi ---
+function handleMainContentClick(e) {
+    const target = e.target;
+    const row = target.closest('[data-id]');
+    if (!row) return;
+
+    const id = row.getAttribute('data-id');
+
+    if (target.closest('.edit-btn')) {
+        openEditForm(id);
+    } else if (target.closest('.delete-btn')) {
+        openDeleteModal(id);
+    } else if (target.closest('.data-cell')) {
+        // Navigasi ke Halaman Detail
+        const itemData = localData.find(item => item['ID Kinerja'] === id);
+        if (itemData) {
+            sessionStorage.setItem('detailData', JSON.stringify(itemData));
+            window.location.href = 'detail.html';
+        }
     }
 }
 
-function handleActionClick(e) {
-    const target = e.target.closest('button[data-action]');
-    if (!target) return;
 
-    const action = target.dataset.action;
-    const id = target.dataset.id;
+// --- Helper & UI Functions ---
+function getStatusBadge(status) {
+    const color = getStatusColor(status);
+    return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${color}">${status || ''}</span>`;
+}
 
-    if (action === 'edit') {
-        handleEditClick(id);
-    } else if (action === 'delete') {
-        handleDeleteClick(id);
+function getFileIcon(fileUrl) {
+    if (fileUrl && fileUrl !== 'Gagal mengunggah file' && fileUrl !== 'Mengunggah...') {
+        return `<a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="p-2 rounded-full hover:bg-gray-200 text-indigo-600 hover:text-indigo-800 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+        </a>`;
+    } else {
+        return `<span class="p-2 text-gray-400 cursor-not-allowed">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+        </span>`;
     }
 }
 
-function handleEditClick(id) {
-    const itemData = localData.find(item => item['ID Kinerja'] === id);
-    if (!itemData) return;
-
-    form.reset();
-    submitButton.textContent = 'Update Kinerja';
-    formActionInput.value = 'update';
-    idKinerjaInput.value = itemData['ID Kinerja'];
-    
-    // Konversi dd/mm/yyyy ke yyyy-mm-dd untuk input date
-    const dateParts = itemData.Tanggal.split('/');
-    document.getElementById('tanggal').value = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
-    
-    document.getElementById('deskripsi').value = itemData.Deskripsi;
-    updateStatusSelection(itemData.Status);
-    
-    const currentFileP = document.getElementById('current-file');
-    currentFileP.textContent = itemData.File ? `File saat ini: ${itemData.File.substring(itemData.File.lastIndexOf('/') + 1)}` : 'Tidak ada file.';
-
-    formModalOverlay.classList.remove('hidden');
-}
-
-async function handleDeleteClick(id) {
-    if (!confirm('Anda yakin ingin menghapus data ini? Aksi ini tidak dapat dibatalkan.')) {
+function handleFileSelect() {
+    const file = fileInput.files[0];
+    if (!file) {
+        fileData = null;
+        fileNameSpan.textContent = 'Pilih file (opsional)';
         return;
     }
-
-    // Optimistic UI
-    const row = document.getElementById(`row-${id}`);
-    const card = document.getElementById(`card-${id}`);
-    if(row) row.classList.add('row-deleted');
-    if(card) card.classList.add('row-deleted');
-    
-    setTimeout(() => {
-        row?.remove();
-        card?.remove();
-    }, 500);
-
-
-    try {
-        const response = await sendDataToServer({ action: 'delete', 'ID Kinerja': id });
-        if (response.status !== 'success') {
-            throw new Error(response.message);
-        }
-        localData = localData.filter(item => item['ID Kinerja'] !== id);
-    } catch (error) {
-        console.error('Gagal menghapus data:', error);
-        alert('Gagal menghapus data. Memuat ulang data untuk konsistensi.');
-        fetchData(); // Revert
-    }
+    fileNameSpan.textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const base64Data = e.target.result.split(',')[1];
+        fileData = { base64Data, fileName: file.name, mimeType: file.type };
+    };
+    reader.readAsDataURL(file);
 }
 
-// --- Logika Inti ---
-
-async function fetchData() {
-    loadingDiv.style.display = 'block';
-    errorDiv.classList.add('hidden');
-
-    try {
-        const response = await fetch(GAS_WEB_APP_URL);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        localData = await response.json();
-        renderData(localData);
-    } catch (error) {
-        errorDiv.classList.remove('hidden');
-        document.getElementById('error-message').textContent = error.message;
-    } finally {
-        loadingDiv.style.display = 'none';
-    }
+function generateId() {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const random = Math.random().toString(36).substring(2, 7);
+    return `${yyyy}${mm}${dd}-${random}`;
 }
 
 async function sendDataToServer(data) {
     const response = await fetch(GAS_WEB_APP_URL, {
         method: 'POST',
+        redirect: "follow",
         body: JSON.stringify(data),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        headers: { "Content-Type": "text/plain;charset=utf-8" }
     });
     if (!response.ok) throw new Error('Network response was not ok.');
     return response.json();
 }
 
-// --- Fungsi Render & Update UI ---
-
-function renderData(data) {
-    tableBody.innerHTML = '';
-    cardContainer.innerHTML = '';
-    if (data.length === 0) {
-        const emptyMessage = '<p class="px-6 py-10 text-center text-gray-500">Belum ada data kinerja.</p>';
-        tableBody.innerHTML = `<tr><td colspan="5">${emptyMessage}</td></tr>`;
-        cardContainer.innerHTML = emptyMessage;
+function updateLocalData(savedData) {
+    const index = localData.findIndex(item => item['ID Kinerja'] === savedData['ID Kinerja']);
+    if (index !== -1) {
+        localData[index] = savedData;
     } else {
-        data.forEach(item => {
-            tableBody.innerHTML += createTableRow(item);
-            cardContainer.innerHTML += createCard(item);
-        });
+        localData.unshift(savedData);
     }
+    renderData();
 }
 
-function updateUI(data, isOptimistic = false) {
-    const id = data['ID Kinerja'];
-    const row = document.getElementById(`row-${id}`);
-    const card = document.getElementById(`card-${id}`);
-
-    if (row && card) {
-        const newRowContent = createTableRow(data);
-        const newCardContent = createCard(data);
-        row.outerHTML = newRowContent;
-        card.outerHTML = newCardContent;
-        if(!isOptimistic){
-            document.getElementById(`row-${id}`).classList.add('new-row-highlight');
-            document.getElementById(`card-${id}`).classList.add('new-row-highlight');
-        }
-    }
-}
-
-// --- Fungsi Helper ---
-
-function initializeStatusButtons() {
+function renderStatusButtons() {
     statusContainer.innerHTML = '';
-    statusOptions.forEach(option => {
+    statusOptions.forEach(status => {
         const button = document.createElement('button');
         button.type = 'button';
-        button.textContent = option;
-        button.dataset.value = option;
-        button.className = `status-btn p-2 text-sm font-medium border rounded-md ${getStatusColor(option, true)}`;
+        button.textContent = status;
+        button.className = 'px-3 py-1 text-sm border rounded-full transition';
+        button.setAttribute('data-status', status);
+        button.addEventListener('click', () => setActiveStatus(status));
         statusContainer.appendChild(button);
     });
 }
 
-function updateStatusSelection(selectedValue) {
-    document.getElementById('status-input').value = selectedValue;
-    statusContainer.querySelectorAll('.status-btn').forEach(btn => {
-        btn.classList.remove('selected', ...getStatusColor(btn.dataset.value).split(' '));
-        if (btn.dataset.value === selectedValue) {
-            btn.classList.add('selected', ...getStatusColor(selectedValue).split(' '));
+function setActiveStatus(activeStatus) {
+    statusInput.value = activeStatus;
+    statusContainer.querySelectorAll('button').forEach(btn => {
+        if (btn.getAttribute('data-status') === activeStatus) {
+            btn.className = `px-3 py-1 text-sm border rounded-full transition text-white border-indigo-600 bg-indigo-600`;
+        } else {
+            btn.className = `px-3 py-1 text-sm border rounded-full transition text-gray-600 border-gray-300 bg-white hover:bg-gray-100`;
         }
     });
 }
 
-function createTableRow(item) {
-    const id = item['ID Kinerja'];
-    return `
-        <tr id="row-${id}" class="hover:bg-gray-50">
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${item.Tanggal || 'N/A'}</td>
-            <td class="px-6 py-4 text-sm text-gray-500">${item.Deskripsi || ''}</td>
-            <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(item.Status)}">${item.Status || ''}</span></td>
-            <td class="px-6 py-4 whitespace-nowrap text-center">${createFileIcon(item.File)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
-                <div class="flex justify-center items-center gap-x-2">
-                    <button data-action="edit" data-id="${id}" class="text-indigo-600 hover:text-indigo-900 p-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
-                    </button>
-                    <button data-action="delete" data-id="${id}" class="text-red-600 hover:text-red-900 p-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-                    </button>
-                </div>
-            </td>
-        </tr>`;
+function showLoading() {
+    loadingDiv.innerHTML = '<p class="text-gray-500">Memuat data...</p>';
+    loadingDiv.style.display = 'block';
+    tableBody.parentElement.classList.add('hidden');
+    cardContainer.classList.add('hidden');
+    errorDiv.classList.add('hidden');
 }
 
-function createCard(item) {
-    const id = item['ID Kinerja'];
-    return `
-        <div id="card-${id}" class="bg-white rounded-lg shadow p-4 space-y-3">
-            <div class="flex justify-between items-start">
-                <div>
-                    <p class="text-sm font-medium text-gray-900">${item.Tanggal || 'N/A'}</p>
-                    <p class="text-sm text-gray-500">${item.Deskripsi || ''}</p>
-                </div>
-                <span class="flex-shrink-0 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(item.Status)}">${item.Status || ''}</span>
-            </div>
-            <div class="flex justify-between items-center pt-2 border-t border-gray-100">
-                <div>${createFileIcon(item.File)}</div>
-                <div class="flex items-center gap-x-2">
-                    <button data-action="edit" data-id="${id}" class="text-gray-500 hover:text-indigo-600 p-1">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg>
-                    </button>
-                    <button data-action="delete" data-id="${id}" class="text-gray-500 hover:text-red-600 p-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-                    </button>
-                </div>
-            </div>
-        </div>`;
+function hideLoading() {
+    loadingDiv.style.display = 'none';
+    tableBody.parentElement.classList.remove('hidden');
+    cardContainer.classList.remove('hidden');
 }
 
-function createFileIcon(fileUrl) {
-    const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>`;
-    if (fileUrl && fileUrl.startsWith('http')) {
-        return `<a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="inline-block text-indigo-600 hover:text-indigo-800">${svgIcon}</a>`;
-    } else {
-        return `<span class="inline-block text-gray-300 cursor-not-allowed">${svgIcon}</span>`;
+function showError(message) {
+    hideLoading();
+    errorDiv.classList.remove('hidden');
+    errorMessageP.textContent = message;
+}
+
+function getStatusColor(status) {
+    switch (status) {
+        case 'Hadir': return 'bg-blue-100 text-blue-800';
+        case 'Lembur': return 'bg-purple-100 text-purple-800';
+        case 'Cuti': return 'bg-gray-100 text-gray-800';
+        case 'Dinas': return 'bg-yellow-100 text-yellow-800';
+        case 'Sakit': return 'bg-orange-100 text-orange-800';
+        case 'ST': return 'bg-green-100 text-green-800';
+        default: return 'bg-pink-100 text-pink-800';
     }
-}
-
-function createKinerjaId() {
-    const date = new Date();
-    const random = Math.random().toString(36).substring(2, 7);
-    return `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}-${random}`;
-}
-
-function readFileAsBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve({
-            base64Data: reader.result.split(',')[1],
-            fileName: file.name,
-            mimeType: file.type
-        });
-        reader.onerror = error => reject(error);
-    });
-}
-
-function getStatusColor(status, forButton = false) {
-    const colors = { Hadir: 'bg-blue-100 text-blue-800', Lembur: 'bg-purple-100 text-purple-800', Cuti: 'bg-gray-100 text-gray-800', Dinas: 'bg-yellow-100 text-yellow-800', Sakit: 'bg-orange-100 text-orange-800', ST: 'bg-green-100 text-green-800' };
-    const buttonColors = { Hadir: 'border-blue-300 hover:bg-blue-50 text-blue-700', Lembur: 'border-purple-300 hover:bg-purple-50 text-purple-700', Cuti: 'border-gray-300 hover:bg-gray-50 text-gray-700', Dinas: 'border-yellow-300 hover:bg-yellow-50 text-yellow-700', Sakit: 'border-orange-300 hover:bg-orange-50 text-orange-700', ST: 'border-green-300 hover:bg-green-50 text-green-700' };
-    return forButton ? (buttonColors[status] || 'border-gray-300 text-gray-700') : (colors[status] || 'bg-pink-100 text-pink-800');
 }
 
