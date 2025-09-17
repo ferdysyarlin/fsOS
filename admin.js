@@ -9,20 +9,22 @@ let currentlyEditingId = null;
 let activeDetailId = null;
 const statusOptions = ['Hadir', 'Lembur', 'Cuti', 'Dinas', 'Sakit', 'ST'];
 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+// Palet Warna Pastel Baru
 const colorOptions = {
-    'default': 'border-transparent',
-    'blue': 'border-blue-400',
-    'green': 'border-green-400',
-    'yellow': 'border-yellow-400',
-    'red': 'border-red-400',
-    'purple': 'border-purple-400',
+    'default': 'bg-white hover:bg-gray-50',
+    'blue': 'bg-blue-50 hover:bg-blue-100',
+    'green': 'bg-green-50 hover:bg-green-100',
+    'yellow': 'bg-yellow-50 hover:bg-yellow-100',
+    'red': 'bg-red-50 hover:bg-red-100',
+    'purple': 'bg-purple-50 hover:bg-purple-100',
 };
 const colorClasses = {
-    'blue': 'bg-blue-400',
-    'green': 'bg-green-400',
-    'yellow': 'bg-yellow-400',
-    'red': 'bg-red-400',
-    'purple': 'bg-purple-400',
+    'blue': 'bg-blue-300',
+    'green': 'bg-green-300',
+    'yellow': 'bg-yellow-300',
+    'red': 'bg-red-300',
+    'purple': 'bg-purple-300',
 }
 
 // --- Elemen DOM ---
@@ -61,6 +63,7 @@ const monthFilter = document.getElementById('month-filter');
 const yearFilter = document.getElementById('year-filter');
 const resetFilterButton = document.getElementById('reset-filter-button');
 const reloadDataButton = document.getElementById('reload-data-button');
+// Mobile Filter Elements
 const mobileFilterButton = document.getElementById('mobile-filter-button');
 const mobileFilterModal = document.getElementById('mobile-filter-modal');
 const closeMobileFilterButton = document.getElementById('close-mobile-filter-button');
@@ -71,6 +74,7 @@ const monthFilterMobile = document.getElementById('month-filter-mobile');
 const yearFilterMobile = document.getElementById('year-filter-mobile');
 const colorContainer = document.getElementById('color-container');
 const warnaInput = document.getElementById('warna-input');
+const resetFilterButtonMobile = document.getElementById('reset-filter-button-mobile');
 
 // --- DEKLARASI FUNGSI ---
 
@@ -127,11 +131,11 @@ function renderDetail(data) {
         <div class="flex justify-between items-start">
             <div>
                 <label class="text-xs text-gray-500 uppercase font-semibold">ID Kinerja</label>
-                <p class="text-md text-gray-700 font-mono break-all">${data['ID Kinerja'] || '-'}</p>
+                <p class="text-sm text-gray-700 font-mono break-all">${data['ID Kinerja'] || '-'}</p>
             </div>
             <div class="text-right flex-shrink-0 ml-4">
                 <label class="text-xs text-gray-500 uppercase font-semibold">Tanggal</label>
-                <p class="text-md text-gray-900">${data.Tanggal || '-'}</p>
+                <p class="text-sm text-gray-900">${data.Tanggal || '-'}</p>
             </div>
         </div>
         <div class="border-t pt-5 mt-5">
@@ -139,7 +143,7 @@ function renderDetail(data) {
                 <label class="text-xs text-gray-500 uppercase font-semibold">Deskripsi</label>
                 ${getStatusBadge(data.Status)}
             </div>
-            <p class="text-md text-gray-800 whitespace-pre-wrap">${data.Deskripsi || 'Tidak ada deskripsi.'}</p>
+            <p class="text-sm text-gray-800 whitespace-pre-wrap">${data.Deskripsi || 'Tidak ada deskripsi.'}</p>
         </div>
         <div class="border-t pt-5 mt-5">
             <label class="text-xs text-gray-500 uppercase font-semibold">Lampiran</label>
@@ -202,8 +206,8 @@ function renderData(dataToRender) {
 
 function createTableRow(item) {
     const row = document.createElement('tr');
-    const borderColorClass = colorOptions[item.Warna] || colorOptions['default'];
-    row.className = `hover:bg-gray-50 border-l-4 ${borderColorClass}`;
+    const colorClass = colorOptions[item.Warna] || colorOptions['default'];
+    row.className = `${colorClass}`;
     row.setAttribute('data-id', item['ID Kinerja']);
     
     const isPinned = item.Pin === true || item.Pin === 'TRUE';
@@ -230,8 +234,8 @@ function createTableRow(item) {
 
 function createCardView(item) {
    const card = document.createElement('div');
-   const borderColorClass = colorOptions[item.Warna] || colorOptions['default'];
-   card.className = `bg-white rounded-xl shadow-md p-4 flex flex-col gap-3 border-l-4 ${borderColorClass}`;
+   const colorClass = colorOptions[item.Warna] || colorOptions['default'];
+   card.className = `rounded-xl shadow-md p-4 flex flex-col gap-3 ${colorClass}`;
    card.setAttribute('data-id', item['ID Kinerja']);
 
    const isPinned = item.Pin === true || item.Pin === 'TRUE';
@@ -241,18 +245,18 @@ function createCardView(item) {
         <div class="data-cell cursor-pointer flex-1 flex items-start gap-4">
             ${getPreviewThumbnail(item.File)}
             <div class="flex-1 min-w-0">
-                 <p class="text-sm font-semibold text-gray-800 whitespace-pre-wrap max-h-16 overflow-y-auto">${item.Deskripsi || 'Tanpa Deskripsi'}</p>
+                 <p class="text-xs font-normal text-gray-800 whitespace-pre-wrap max-h-16 overflow-y-auto">${item.Deskripsi || 'Tanpa Deskripsi'}</p>
             </div>
         </div>
-        <div class="border-t border-gray-100 pt-3 flex items-center justify-between">
+        <div class="border-t border-gray-200 pt-3 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <p class="text-xs text-gray-500">${item.Tanggal || 'N/A'}</p>
                 ${getStatusBadge(item.Status)}
             </div>
             <div class="flex items-center">
-                 <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition pin-btn" title="Sematkan">${pinIcon}</button>
-                 <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn" title="Ubah"><i data-lucide="pencil" class="w-5 h-5"></i></button>
-                 <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn" title="Hapus"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                 <button class="p-2 rounded-full hover:bg-black/5 text-gray-500 hover:text-gray-800 transition pin-btn" title="Sematkan">${pinIcon}</button>
+                 <button class="p-2 rounded-full hover:bg-black/5 text-gray-500 hover:text-gray-800 transition edit-btn" title="Ubah"><i data-lucide="pencil" class="w-5 h-5"></i></button>
+                 <button class="p-2 rounded-full hover:bg-black/5 text-gray-500 hover:text-red-600 transition delete-btn" title="Hapus"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
             </div>
         </div>`;
     cardContainer.appendChild(card);
@@ -533,8 +537,6 @@ function applyAndRenderFilters() {
         const pinA = a.Pin === true || a.Pin === 'TRUE' ? 1 : 0;
         const pinB = b.Pin === true || b.Pin === 'TRUE' ? 1 : 0;
         if (pinB !== pinA) return pinB - pinA;
-        // If pins are the same, you might want a secondary sort, e.g., by date
-        // For now, it maintains original relative order for items with same pin status
         return 0;
     });
 
@@ -587,11 +589,11 @@ function setActiveColor(activeColor) {
     warnaInput.value = activeColor === 'default' ? '' : activeColor;
     
     const ringColorValues = {
-        blue: '#3b82f6',   // Tailwind blue-500
-        green: '#22c55e',  // Tailwind green-500
-        yellow: '#eab308', // Tailwind yellow-500
-        red: '#ef4444',    // Tailwind red-500
-        purple: '#8b5cf6', // Tailwind purple-500
+        blue: '#93c5fd',   // Tailwind blue-300
+        green: '#86efac',  // Tailwind green-300
+        yellow: '#fde047', // Tailwind yellow-300
+        red: '#fca5a5',    // Tailwind red-300
+        purple: '#c4b5fd', // Tailwind purple-300
         default: '#9ca3af' // Tailwind gray-400
     };
 
