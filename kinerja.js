@@ -36,8 +36,10 @@ let listView, detailView, tableBody, cardContainer, detailContent, formModalOver
     resetFilterButtonMobile;
 
 // --- Fungsi Inisialisasi ---
-export function init() {
-    // Menghubungkan variabel dengan elemen DOM
+export function init(dataFromCache) {
+    localData = dataFromCache || []; // Gunakan data dari cache
+    
+    // Hubungkan semua variabel DOM
     listView = document.getElementById('list-view');
     detailView = document.getElementById('detail-view');
     tableBody = document.getElementById('kinerja-table-body');
@@ -62,7 +64,7 @@ export function init() {
     statusFilter = document.getElementById('status-filter');
     monthFilter = document.getElementById('month-filter');
     yearFilter = document.getElementById('year-filter');
-    resetFilterButton = document.querySelector('#list-view #reset-filter-button'); 
+    resetFilterButton = document.getElementById('reset-filter-button');
     mobileFilterButton = document.getElementById('mobile-filter-button');
     mobileFilterModal = document.getElementById('mobile-filter-modal');
     closeMobileFilterButton = document.getElementById('close-mobile-filter-button');
@@ -79,53 +81,56 @@ export function init() {
     addDataButton = document.getElementById('add-data-button');
     resetFilterButtonMobile = document.getElementById('reset-filter-button-mobile');
 
-
-    // Memasang Event Listeners
-    addDataButton.addEventListener('click', openCreateForm);
-    listView.addEventListener('click', handleBodyClick); 
-    closeFormModalButton.addEventListener('click', closeFormModal);
-    formModalOverlay.addEventListener('click', (e) => { if (e.target === formModalOverlay) closeFormModal() });
-    cancelDeleteButton.addEventListener('click', () => deleteModalOverlay.classList.add('hidden'));
-    deleteModalOverlay.addEventListener('click', (e) => { if (e.target === deleteModalOverlay) deleteModalOverlay.classList.add('hidden')});
-    confirmDeleteButton.addEventListener('click', executeDelete);
-    form.addEventListener('submit', handleFormSubmit);
-    fileInput.addEventListener('change', handleFileSelect);
+    // Pasang semua Event Listener
+    if(addDataButton) addDataButton.addEventListener('click', openCreateForm);
+    if(listView) listView.addEventListener('click', handleBodyClick); 
+    if(closeFormModalButton) closeFormModalButton.addEventListener('click', closeFormModal);
+    if(formModalOverlay) formModalOverlay.addEventListener('click', (e) => { if (e.target === formModalOverlay) closeFormModal() });
+    if(cancelDeleteButton) cancelDeleteButton.addEventListener('click', () => deleteModalOverlay.classList.add('hidden'));
+    if(deleteModalOverlay) deleteModalOverlay.addEventListener('click', (e) => { if (e.target === deleteModalOverlay) deleteModalOverlay.classList.add('hidden')});
+    if(confirmDeleteButton) confirmDeleteButton.addEventListener('click', executeDelete);
+    if(form) form.addEventListener('submit', handleFormSubmit);
+    if(fileInput) fileInput.addEventListener('change', handleFileSelect);
     
     // Filter Listeners
-    [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
-    searchInputMobile.addEventListener('input', applyAndRenderFilters);
+    [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => { if(el) el.addEventListener('input', applyAndRenderFilters) });
+    if(searchInputMobile) searchInputMobile.addEventListener('input', applyAndRenderFilters);
     if(resetFilterButton) resetFilterButton.addEventListener('click', resetFilters);
     if(resetFilterButtonMobile) resetFilterButtonMobile.addEventListener('click', resetFilters);
 
     // Mobile Filter Listeners
-    mobileFilterButton.addEventListener('click', () => {
+    if(mobileFilterButton) mobileFilterButton.addEventListener('click', () => {
         syncDesktopFilters();
         mobileFilterModal.classList.remove('hidden');
     });
-    closeMobileFilterButton.addEventListener('click', () => mobileFilterModal.classList.add('hidden'));
-    applyMobileFilterButton.addEventListener('click', () => {
+    if(closeMobileFilterButton) closeMobileFilterButton.addEventListener('click', () => mobileFilterModal.classList.add('hidden'));
+    if(applyMobileFilterButton) applyMobileFilterButton.addEventListener('click', () => {
         syncMobileFilters();
         applyAndRenderFilters();
         mobileFilterModal.classList.add('hidden');
     });
 
-    // Memuat data awal & render UI
+    // Render UI dengan data yang sudah ada
+    populateFilters();
+    applyAndRenderFilters();
     renderStatusButtons();
     renderColorButtons();
-    fetchData();
+    lucide.createIcons();
 }
 
-// --- Fungsi Fetch Data (Sekarang di-export) ---
+
+// --- Fungsi Fetch Data (Sekarang untuk Reload) ---
 export async function fetchData() {
     showLoading();
     try {
         const response = await fetch(`${GAS_WEB_APP_URL}?page=kinerja`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        localData = await response.json();
-        populateFilters();
-        applyAndRenderFilters();
+        const freshData = await response.json();
+        localData = freshData; // Perbarui cache lokal
+        return freshData; // Kembalikan data baru ke admin.js
     } catch (error) {
         showError(error.message);
+        return localData; // Kembalikan data lama jika gagal
     } finally {
         hideLoading();
     }
