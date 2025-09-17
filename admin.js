@@ -43,6 +43,8 @@ const searchInput = document.getElementById('search-input');
 const statusFilter = document.getElementById('status-filter');
 const monthFilter = document.getElementById('month-filter');
 const yearFilter = document.getElementById('year-filter');
+const resetFilterButton = document.getElementById('reset-filter-button');
+const reloadDataButton = document.getElementById('reload-data-button');
 
 // --- DEKLARASI FUNGSI ---
 
@@ -100,7 +102,10 @@ function renderDetail(data) {
                 <label class="text-xs text-gray-500 uppercase font-semibold">ID Kinerja</label>
                 <p class="text-md text-gray-700 font-mono break-all">${data['ID Kinerja'] || '-'}</p>
             </div>
-            <div class="text-right">
+            <div class="text-right flex-shrink-0 ml-4">
+                 <button onclick="hideDetailView()" class="p-2 -mr-2 -mt-2 rounded-full hover:bg-gray-100 transition">
+                    <i data-lucide="x"></i>
+                </button>
                 <label class="text-xs text-gray-500 uppercase font-semibold">Tanggal</label>
                 <p class="text-md text-gray-900">${data.Tanggal || '-'}</p>
             </div>
@@ -124,10 +129,8 @@ function handleBodyClick(e) {
     const target = e.target;
     const itemElement = target.closest('[data-id]');
     const formModalContent = formModalOverlay.querySelector('div');
-    const deleteModalContent = deleteModalOverlay.querySelector('div');
 
     if (target === closeFormModalButton || (!formModalContent.contains(target) && target === formModalOverlay)) closeFormModal();
-    if (target === cancelDeleteButton || (!deleteModalContent.contains(target) && target === deleteModalOverlay)) deleteModalOverlay.classList.add('hidden');
     
     if (!itemElement) return;
     const id = itemElement.getAttribute('data-id');
@@ -374,6 +377,11 @@ function createEmbedUrl(originalUrl) {
     return match ? `https://drive.google.com/file/d/${match[1]}/preview` : null;
 }
 
+function createThumbnailUrl(originalUrl) {
+    const match = originalUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    return match ? `https://drive.google.com/thumbnail?id=${match[1]}` : originalUrl;
+}
+
 function renderFilePreviews(files) {
     if (!files || !files.length) {
         return `<div class="w-full h-48 border rounded-lg bg-gray-50 flex flex-col items-center justify-center p-4"><i data-lucide="file-x" class="w-12 h-12 text-gray-400 mb-2"></i><p class="text-sm text-gray-500">Tidak ada file terlampir.</p></div>`;
@@ -383,7 +391,10 @@ function renderFilePreviews(files) {
     let html = '';
     if (imageFiles.length) {
         html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">`;
-        imageFiles.forEach(file => html += `<a href="${file.url}" target="_blank" rel="noopener noreferrer"><img src="${file.url}" class="w-full h-32 object-cover rounded-md border hover:opacity-80 transition" /></a>`);
+        imageFiles.forEach(file => {
+            const thumbnailUrl = createThumbnailUrl(file.url);
+            html += `<a href="${file.url}" target="_blank" rel="noopener noreferrer"><img src="${thumbnailUrl}" class="w-full h-32 object-cover rounded-md border hover:opacity-80 transition" loading="lazy" /></a>`;
+        });
         html += `</div>`;
     }
     if (docFiles.length) {
@@ -436,7 +447,7 @@ function applyAndRenderFilters() {
     const month = monthFilter.value;
     const year = yearFilter.value;
     const filteredData = localData.filter(item => {
-        const [day, itemMonth, itemYear] = item.Tanggal.split('/');
+        const [, itemMonth, itemYear] = item.Tanggal.split('/');
         const searchMatch = !searchTerm || (item.Deskripsi && item.Deskripsi.toLowerCase().includes(searchTerm));
         const statusMatch = !status || item.Status === status;
         const monthMatch = !month || itemMonth === month;
@@ -446,6 +457,14 @@ function applyAndRenderFilters() {
     renderData(filteredData);
 }
 
+function resetFilters() {
+    searchInput.value = '';
+    statusFilter.value = '';
+    monthFilter.value = '';
+    yearFilter.value = '';
+    applyAndRenderFilters();
+}
+
 // --- EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
@@ -453,9 +472,12 @@ document.addEventListener('DOMContentLoaded', () => {
     pinForm.addEventListener('submit', handlePinSubmit);
     addDataButton.addEventListener('click', openCreateForm);
     document.body.addEventListener('click', handleBodyClick);
+    cancelDeleteButton.addEventListener('click', () => deleteModalOverlay.classList.add('hidden'));
     confirmDeleteButton.addEventListener('click', executeDelete);
     form.addEventListener('submit', handleFormSubmit);
     fileInput.addEventListener('change', handleFileSelect);
+    resetFilterButton.addEventListener('click', resetFilters);
+    reloadDataButton.addEventListener('click', fetchData);
     [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
 });
 
