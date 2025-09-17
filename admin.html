@@ -25,15 +25,17 @@
     <!-- Verifikasi PIN -->
     <div id="pin-modal-overlay" class="fixed inset-0 bg-white z-50 flex items-center justify-center transition-opacity duration-300">
         <div id="pin-modal-content" class="text-center p-5 transition-transform duration-300">
-            <form id="pin-form" class="flex items-center gap-2 justify-center">
-                <a href="index.html" class="p-3 rounded-lg border bg-gray-100 text-gray-600 hover:bg-gray-200 transition">
+             <div class="flex items-center gap-2 justify-center">
+                <a href="index.html" class="p-3 rounded-lg border bg-gray-100 text-gray-600 hover:bg-gray-200 transition" aria-label="Kembali ke Beranda">
                     <i data-lucide="home" class="w-5 h-5"></i>
                 </a>
-                <input type="password" id="pin-input" name="pin" class="w-48 text-center text-lg tracking-widest bg-white border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500" maxlength="4" pattern="[0-9]*" inputmode="numeric" autocomplete="off">
-                <button type="submit" class="p-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition">
-                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
-                </button>
-            </form>
+                <form id="pin-form" class="flex items-center">
+                    <input type="password" id="pin-input" name="pin" class="w-48 text-center text-lg tracking-widest bg-white border border-gray-300 rounded-l-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500" maxlength="4" pattern="[0-9]*" inputmode="numeric" autocomplete="off">
+                    <button type="submit" class="p-3 rounded-r-lg bg-indigo-600 text-white hover:bg-indigo-700 transition" aria-label="Masuk">
+                        <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </button>
+                </form>
+            </div>
             <p id="pin-error" class="text-red-500 text-sm mt-2 h-5"></p>
         </div>
     </div>
@@ -54,29 +56,23 @@
             <div id="list-view" class="w-full md:w-full transition-all duration-300">
                 <!-- Filter Controls -->
                 <div class="bg-white p-4 rounded-xl shadow-sm mb-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <input type="search" id="search-input" placeholder="Cari deskripsi..." class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                        <select id="status-filter" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
-                            <option value="">Semua Status</option>
-                        </select>
-                        <select id="month-filter" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
-                            <option value="">Semua Bulan</option>
-                            <option value="01">Januari</option>
-                            <option value="02">Februari</option>
-                            <option value="03">Maret</option>
-                            <option value="04">April</option>
-                            <option value="05">Mei</option>
-                            <option value="06">Juni</option>
-                            <option value="07">Juli</option>
-                            <option value="08">Agustus</option>
-                            <option value="09">September</option>
-                            <option value="10">Oktober</option>
-                            <option value="11">November</option>
-                            <option value="12">Desember</option>
-                        </select>
-                        <select id="year-filter" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
-                            <option value="">Semua Tahun</option>
-                        </select>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex-grow">
+                             <input type="search" id="search-input" placeholder="Cari deskripsi..." class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        </div>
+                        <div class="flex-grow grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <select id="status-filter" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white"></select>
+                            <select id="month-filter" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white"></select>
+                            <select id="year-filter" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white"></select>
+                        </div>
+                         <div class="flex items-center gap-2">
+                            <button id="reset-filter-button" class="p-2 rounded-lg border bg-gray-100 text-gray-600 hover:bg-gray-200 transition" aria-label="Reset Filter">
+                                <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                            </button>
+                             <button id="reload-data-button" class="p-2 rounded-lg border bg-gray-100 text-gray-600 hover:bg-gray-200 transition" aria-label="Muat Ulang Data">
+                                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -105,7 +101,7 @@
             </div>
 
             <!-- Tampilan Detail (Kanan) -->
-            <div id="detail-view" class="hidden md:w-1/2 w-full transition-all duration-300">
+            <div id="detail-view" class="hidden w-full md:w-1/2 transition-all duration-300">
                  <div class="bg-white rounded-xl shadow-sm p-6 sticky top-24 space-y-5">
                     <div id="detail-content" class="space-y-5"></div>
                 </div>
