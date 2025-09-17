@@ -94,18 +94,28 @@ function renderDetail(data) {
                 <label class="text-xs text-gray-500 uppercase font-semibold">ID Kinerja</label>
                 <p class="text-md text-gray-700 font-mono break-all">${data['ID Kinerja'] || '-'}</p>
             </div>
-             <button onclick="hideDetailView()" class="p-2 rounded-full hover:bg-gray-100 transition flex-shrink-0">
-                <i data-lucide="x"></i>
-            </button>
+            <div class="text-right">
+                <label class="text-xs text-gray-500 uppercase font-semibold">Tanggal</label>
+                <p class="text-md text-gray-900">${data.Tanggal || '-'}</p>
+            </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 border-t pt-5 mt-5">
-            <div><label class="text-xs text-gray-500 uppercase font-semibold">Tanggal</label><p class="text-md text-gray-900">${data.Tanggal || '-'}</p></div>
-            <div><label class="text-xs text-gray-500 uppercase font-semibold">Status</label><p>${getStatusBadge(data.Status)}</p></div>
+
+        <div class="border-t pt-5 mt-5">
+            <div class="flex justify-between items-center mb-2">
+                <label class="text-xs text-gray-500 uppercase font-semibold">Deskripsi</label>
+                ${getStatusBadge(data.Status)}
+            </div>
+            <p class="text-md text-gray-800 whitespace-pre-wrap">${data.Deskripsi || 'Tidak ada deskripsi.'}</p>
         </div>
-        <div class="border-t pt-5 mt-5"><label class="text-xs text-gray-500 uppercase font-semibold">Deskripsi</label><p class="text-md text-gray-800 whitespace-pre-wrap">${data.Deskripsi || 'Tidak ada deskripsi.'}</p></div>
-        <div class="border-t pt-5 mt-5"><label class="text-xs text-gray-500 uppercase font-semibold">File Terlampir</label><div class="mt-1">${getFileLink(data.File)}</div></div>
+
+        <div class="border-t pt-5 mt-5">
+            <label class="text-xs text-gray-500 uppercase font-semibold">Pratinjau File</label>
+            <div class="mt-2">${getFilePreview(data.File)}</div>
+        </div>
     `;
+    lucide.createIcons(); // Re-render icons inside detail view
 }
+
 
 function handleBodyClick(e) {
     const target = e.target;
@@ -367,11 +377,26 @@ function getFileIcon(fileUrl) {
     return `${wrapper}<i data-lucide="${iconName}" class="w-5 h-5"></i>${(iconName === 'file-text') ? '</a>' : '</span>'}`;
 }
 
-function getFileLink(fileUrl) {
-    if (fileUrl && fileUrl !== 'Gagal mengunggah file' && fileUrl !== 'Mengunggah...') {
-        return `<a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 hover:underline font-semibold transition">
-            <span>Lihat File</span><i data-lucide="external-link" class="w-4 h-4"></i></a>`;
-    } else { return `<p class="text-gray-500">Tidak ada file yang terlampir.</p>`; }
+function createEmbedUrl(originalUrl) {
+    if (!originalUrl || typeof originalUrl !== 'string') return null;
+    const match = originalUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    if (match && match[1]) {
+        const fileId = match[1];
+        return `https://drive.google.com/file/d/${fileId}/preview`;
+    }
+    return null;
+}
+
+function getFilePreview(fileUrl) {
+    const embedUrl = createEmbedUrl(fileUrl);
+    if (embedUrl) {
+        return `<iframe src="${embedUrl}" class="w-full h-96 border rounded-lg bg-gray-100" frameborder="0"></iframe>`;
+    } else {
+        return `<div class="w-full h-96 border rounded-lg bg-gray-50 flex flex-col items-center justify-center text-center p-4">
+                    <i data-lucide="file-x" class="w-12 h-12 text-gray-400 mb-2"></i>
+                    <p class="text-sm text-gray-500">Tidak ada file yang terlampir atau pratinjau tidak tersedia.</p>
+                </div>`;
+    }
 }
 
 function getStatusColor(status) {
@@ -389,14 +414,16 @@ function getStatusColor(status) {
 function showLoading() {
     loadingDiv.innerHTML = '<p class="text-gray-500">Memuat data...</p>';
     loadingDiv.style.display = 'block';
-    tableBody.parentElement.classList.add('hidden');
+    const tableElement = tableBody.parentElement;
+    if (tableElement) tableElement.classList.add('hidden');
     cardContainer.classList.add('hidden');
     errorDiv.classList.add('hidden');
 }
 
 function hideLoading() {
     loadingDiv.style.display = 'none';
-    tableBody.parentElement.classList.remove('hidden');
+    const tableElement = tableBody.parentElement;
+    if (tableElement) tableElement.classList.remove('hidden');
     cardContainer.classList.remove('hidden');
 }
 
@@ -405,7 +432,6 @@ function showError(message) {
     errorDiv.classList.remove('hidden');
     errorMessageP.textContent = message;
 }
-
 
 // --- EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
