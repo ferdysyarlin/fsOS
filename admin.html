@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - fsOS</title>
+    <title>fsOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,124 +14,146 @@
         .shake { animation: shake 0.5s; }
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-            20%, 40%, 60%, 80% { transform: translateX(5px); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #888; border-radius: 4px;}
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
-        .active-item {
-            background-color: #eef2ff !important;
-            border-left: 4px solid #4f46e5;
-        }
+        .active-item { background-color: #eff6ff; } /* bg-blue-50 */
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <!-- Modal Verifikasi PIN -->
-    <div id="pin-modal-overlay" class="fixed inset-0 bg-white flex items-center justify-center z-50 transition-opacity duration-300">
-        <div id="pin-modal-content" class="w-full max-w-sm p-4">
-             <div class="flex items-center gap-2">
-                <form id="pin-form" class="flex items-center gap-2 w-full">
-                    <input type="password" id="pin-input" autocomplete="current-password" required class="bg-white text-gray-900 text-center tracking-widest text-lg w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 outline-none transition" style="letter-spacing: 0.5em;">
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-lg transition duration-200 flex-shrink-0">
-                        <i data-lucide="arrow-right"></i>
-                    </button>
-                </form>
-                <a href="index.html" class="bg-gray-200 hover:bg-gray-300 text-gray-700 p-3 rounded-lg transition duration-200 flex-shrink-0" aria-label="Kembali ke Beranda">
-                    <i data-lucide="home"></i>
+    <!-- Verifikasi PIN -->
+    <div id="pin-modal-overlay" class="fixed inset-0 bg-white z-50 flex items-center justify-center transition-opacity duration-300">
+        <div id="pin-modal-content" class="text-center p-5 transition-transform duration-300">
+            <form id="pin-form" class="flex items-center gap-2 justify-center">
+                <a href="index.html" class="p-3 rounded-lg border bg-gray-100 text-gray-600 hover:bg-gray-200 transition">
+                    <i data-lucide="home" class="w-5 h-5"></i>
                 </a>
-            </div>
-            <p id="pin-error" class="text-red-500 text-sm mt-3 text-center"></p>
+                <input type="password" id="pin-input" name="pin" class="w-48 text-center text-lg tracking-widest bg-white border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500" maxlength="4" pattern="[0-9]*" inputmode="numeric" autocomplete="off">
+                <button type="submit" class="p-3 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition">
+                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </form>
+            <p id="pin-error" class="text-red-500 text-sm mt-2 h-5"></p>
         </div>
     </div>
 
-    <!-- Kontainer Utama -->
-    <div id="main-container" class="hidden">
-        <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-30 shadow-sm">
-            <div class="w-full mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex items-center justify-between h-16">
-                    <span class="text-xl font-bold text-indigo-600">fsOS</span>
-                    <a href="index.html" class="p-2 rounded-full hover:bg-gray-100 transition">
-                        <i data-lucide="home"></i>
-                    </a>
-                </div>
+    <!-- Konten Utama -->
+    <div id="main-container" class="hidden min-h-screen">
+        <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-20 border-b">
+            <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+                <h1 class="text-xl font-bold text-gray-900">fsOS</h1>
+                <a href="index.html" class="p-2 rounded-full hover:bg-gray-100 transition">
+                    <i data-lucide="home" class="w-5 h-5 text-gray-600"></i>
+                </a>
             </div>
         </header>
 
-        <div id="content-wrapper" class="flex flex-col md:flex-row">
-            <div id="list-view" class="w-full md:border-r md:border-gray-200 transition-all duration-300">
-                <main class="w-full mx-auto p-4 sm:p-6 lg:p-8">
-                    <div id="loading" class="text-center py-10"></div>
-                    <div id="error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg" role="alert">
-                        <strong class="font-bold">Gagal memuat!</strong>
-                        <span class="block sm:inline" id="error-message"></span>
+        <main class="max-w-screen-2xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col md:flex-row gap-6">
+            <!-- Tampilan Daftar (Kiri) -->
+            <div id="list-view" class="w-full md:w-full transition-all duration-300">
+                <!-- Filter Controls -->
+                <div class="bg-white p-4 rounded-xl shadow-sm mb-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <input type="search" id="search-input" placeholder="Cari deskripsi..." class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <select id="status-filter" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
+                            <option value="">Semua Status</option>
+                        </select>
+                        <select id="month-filter" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
+                            <option value="">Semua Bulan</option>
+                            <option value="01">Januari</option>
+                            <option value="02">Februari</option>
+                            <option value="03">Maret</option>
+                            <option value="04">April</option>
+                            <option value="05">Mei</option>
+                            <option value="06">Juni</option>
+                            <option value="07">Juli</option>
+                            <option value="08">Agustus</option>
+                            <option value="09">September</option>
+                            <option value="10">Oktober</option>
+                            <option value="11">November</option>
+                            <option value="12">Desember</option>
+                        </select>
+                        <select id="year-filter" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
+                            <option value="">Semua Tahun</option>
+                        </select>
                     </div>
-                    <div class="hidden sm:block bg-white rounded-xl shadow-md overflow-hidden">
-                        <table id="kinerja-table" class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="relative px-4 py-3"><span class="sr-only">Aksi</span></th>
-                                </tr>
-                            </thead>
-                            <tbody id="kinerja-table-body" class="bg-white divide-y divide-gray-200"></tbody>
-                        </table>
-                    </div>
-                    <div id="card-container" class="sm:hidden grid grid-cols-1 gap-4"></div>
-                </main>
+                </div>
+
+                <div id="loading" class="text-center py-10"></div>
+                <div id="error" class="hidden text-center py-10 bg-red-50 p-4 rounded-lg">
+                    <p class="font-semibold text-red-700">Gagal memuat data</p>
+                    <p id="error-message" class="text-red-600 text-sm"></p>
+                </div>
+
+                <!-- Tampilan Tabel (Desktop) -->
+                <div class="hidden sm:block bg-white rounded-xl shadow-sm overflow-hidden">
+                    <table id="kinerja-table" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="relative px-4 py-3"><span class="sr-only">Aksi</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="kinerja-table-body" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+                <!-- Tampilan Kartu (Mobile) -->
+                <div id="card-container" class="sm:hidden grid grid-cols-1 gap-4"></div>
             </div>
-            <div id="detail-view" class="w-full hidden md:w-1/2 transition-all duration-300">
-                 <main class="sticky top-16">
-                    <div class="p-4 sm:p-6 lg:p-8">
-                        <div id="detail-content" class="bg-white rounded-xl shadow-md overflow-hidden p-6 space-y-5"></div>
-                    </div>
-                 </main>
+
+            <!-- Tampilan Detail (Kanan) -->
+            <div id="detail-view" class="hidden md:w-1/2 w-full transition-all duration-300">
+                 <div class="bg-white rounded-xl shadow-sm p-6 sticky top-24 space-y-5">
+                    <div id="detail-content" class="space-y-5"></div>
+                </div>
             </div>
-        </div>
+        </main>
     </div>
 
-    <!-- Tombol Tambah -->
-    <button id="add-data-button" class="hidden fixed bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full p-4 shadow-lg transition transform hover:scale-110 z-20">
-        <i data-lucide="plus"></i>
+    <!-- Floating Action Button -->
+    <button id="add-data-button" class="hidden fixed bottom-8 right-8 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 flex items-center justify-center transition">
+        <i data-lucide="plus" class="w-7 h-7"></i>
     </button>
-    
-    <!-- Modal Form -->
-    <div id="form-modal-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center p-4 z-40 transition-opacity duration-300">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg transform transition-all duration-300 scale-95" id="form-modal-content">
-            <form id="kinerja-form" class="p-6 space-y-4">
+
+    <!-- Modal Form Tambah/Edit -->
+    <div id="form-modal-overlay" class="hidden fixed inset-0 bg-black/30 z-40 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 space-y-4 transform transition-transform duration-300 scale-95" onclick="event.stopPropagation()">
+            <form id="kinerja-form" class="space-y-4">
                 <input type="hidden" id="id-kinerja" name="ID Kinerja">
-                <input type="date" id="tanggal" name="Tanggal" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Tanggal">
-                <textarea id="deskripsi" name="Deskripsi" rows="4" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Deskripsi Kinerja..."></textarea>
+                <input type="date" id="tanggal" name="Tanggal" required class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Tanggal">
+                <textarea id="deskripsi" name="Deskripsi" rows="4" required class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Deskripsi Kinerja..."></textarea>
+                
                 <div id="status-container" class="flex flex-wrap gap-2"></div>
-                <input type="hidden" id="status-input" name="Status">
+                <input type="hidden" id="status-input" name="Status" required>
+
                 <div>
-                    <input type="file" id="file-input" class="hidden">
+                    <input type="file" id="file-input" class="hidden" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx">
                     <label for="file-input" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                         <i data-lucide="upload" class="w-4 h-4"></i>
-                        <span id="file-name">Pilih file (opsional)</span>
+                        <span id="file-name">Pilih hingga 5 file (opsional)</span>
                     </label>
                     <p id="file-lama" class="text-xs text-gray-500 mt-1"></p>
                 </div>
+                
                 <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" id="close-form-modal" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Batal</button>
-                    <button type="submit" id="submit-button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Simpan Kinerja</button>
+                    <button type="button" id="close-form-modal" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200">Batal</button>
+                    <button type="submit" id="submit-button" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700">Simpan Kinerja</button>
                 </div>
             </form>
         </div>
     </div>
-    
-    <!-- Modal Delete -->
-    <div id="delete-modal-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center p-4 z-50">
-       <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
-            <h3 class="text-lg font-medium text-gray-900">Hapus Kinerja?</h3>
-            <p class="mt-2 text-sm text-gray-500">Apakah Anda yakin ingin menghapus data ini? Aksi ini tidak dapat dibatalkan.</p>
-            <div class="mt-4 flex justify-end gap-3">
-                <button type="button" id="cancel-delete-button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Batal</button>
-                <button type="button" id="confirm-delete-button" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Hapus</button>
+
+    <!-- Modal Konfirmasi Hapus -->
+    <div id="delete-modal-overlay" class="hidden fixed inset-0 bg-black/30 z-40 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 text-center" onclick="event.stopPropagation()">
+            <h3 class="text-lg font-semibold text-gray-900">Hapus Data?</h3>
+            <p class="mt-2 text-sm text-gray-600">Apakah Anda yakin ingin menghapus data kinerja ini? Tindakan ini tidak dapat dibatalkan.</p>
+            <div class="mt-6 flex justify-center gap-3">
+                <button type="button" id="cancel-delete-button" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200">Batal</button>
+                <button type="button" id="confirm-delete-button" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700">Ya, Hapus</button>
             </div>
         </div>
     </div>
