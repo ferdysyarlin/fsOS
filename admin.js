@@ -12,6 +12,7 @@ const sidebar = document.getElementById('sidebar');
 const sidebarOverlay = document.getElementById('sidebar-overlay');
 const hamburgerButton = document.getElementById('hamburger-button');
 const reloadDataButton = document.getElementById('reload-data-button');
+const navLinks = document.querySelectorAll('.nav-link');
 let currentPage = 'kinerja';
 
 // --- Logika Utama ---
@@ -21,6 +22,7 @@ async function showView(pageName) {
     contentContainer.innerHTML = `<div class="text-center py-10"><p class="flex items-center justify-center gap-2 text-gray-500"><i data-lucide="loader-2" class="animate-spin"></i> Memuat halaman...</p></div>`;
     lucide.createIcons();
     closeSidebar();
+    updateActiveLink();
 
     try {
         const response = await fetch(`${pageName}.html`);
@@ -49,6 +51,13 @@ function closeSidebar() {
     sidebar.classList.add('-translate-x-full');
     sidebarOverlay.classList.add('opacity-0', 'pointer-events-none');
 }
+
+function updateActiveLink() {
+    navLinks.forEach(link => {
+        link.classList.toggle('active', link.dataset.page === currentPage);
+    });
+}
+
 
 // --- Verifikasi PIN ---
 function handlePinSubmit(e) {
@@ -99,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     hamburgerButton.addEventListener('click', openSidebar);
     sidebarOverlay.addEventListener('click', closeSidebar);
     reloadDataButton.addEventListener('click', reloadCurrentPageData);
-    document.querySelectorAll('.nav-link').forEach(link => {
+    navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const page = e.currentTarget.dataset.page;
