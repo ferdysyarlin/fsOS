@@ -231,27 +231,29 @@ function createTableRow(item) {
 function createCardView(item) {
    const card = document.createElement('div');
    const borderColorClass = colorOptions[item.Warna] || colorOptions['default'];
-   card.className = `bg-white rounded-xl shadow-md p-4 flex items-center justify-between gap-4 border-l-4 ${borderColorClass}`;
+   card.className = `bg-white rounded-xl shadow-md p-4 flex flex-col gap-3 border-l-4 ${borderColorClass}`;
    card.setAttribute('data-id', item['ID Kinerja']);
 
    const isPinned = item.Pin === true || item.Pin === 'TRUE';
    const pinIcon = isPinned ? `<i data-lucide="pin" class="w-5 h-5 text-indigo-600 fill-indigo-200"></i>` : `<i data-lucide="pin" class="w-5 h-5"></i>`;
 
    card.innerHTML = `
-        <div class="data-cell cursor-pointer flex-1 flex items-center gap-4">
+        <div class="data-cell cursor-pointer flex-1 flex items-start gap-4">
             ${getPreviewThumbnail(item.File)}
             <div class="flex-1 min-w-0">
-                <div class="flex justify-between items-start">
-                    <p class="text-sm font-semibold text-gray-800 whitespace-pre-wrap max-h-16 overflow-y-auto">${item.Deskripsi || 'Tanpa Deskripsi'}</p>
-                    <div class="flex-shrink-0 ml-2">${getStatusBadge(item.Status)}</div>
-                </div>
-                <p class="text-xs text-gray-500 mt-1">${item.Tanggal || 'N/A'}</p>
+                 <p class="text-sm font-semibold text-gray-800 whitespace-pre-wrap max-h-16 overflow-y-auto">${item.Deskripsi || 'Tanpa Deskripsi'}</p>
             </div>
         </div>
-        <div class="flex flex-col gap-1">
-            <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition pin-btn" title="Sematkan">${pinIcon}</button>
-            <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn" title="Ubah"><i data-lucide="pencil" class="w-5 h-5"></i></button>
-            <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn" title="Hapus"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+        <div class="border-t border-gray-100 pt-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <p class="text-xs text-gray-500">${item.Tanggal || 'N/A'}</p>
+                ${getStatusBadge(item.Status)}
+            </div>
+            <div class="flex items-center">
+                 <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition pin-btn" title="Sematkan">${pinIcon}</button>
+                 <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn" title="Ubah"><i data-lucide="pencil" class="w-5 h-5"></i></button>
+                 <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn" title="Hapus"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+            </div>
         </div>`;
     cardContainer.appendChild(card);
 }
@@ -582,10 +584,9 @@ function setActiveColor(activeColor) {
     warnaInput.value = activeColor === 'default' ? '' : activeColor;
     colorContainer.querySelectorAll('.color-swatch').forEach(btn => {
         const btnColor = btn.dataset.color;
-        const ringColorClass = colorClasses[btnColor] ? colorClasses[btnColor].split(' ')[1] : 'ring-gray-400';
         btn.classList.toggle('selected', btnColor === activeColor);
         if(btn.classList.contains('selected')) {
-            btn.style.setProperty('--ring-color', colorClasses[btnColor].split(' ')[0].replace('bg', 'border'));
+            btn.style.setProperty('--ring-color', colorClasses[btnColor] || 'gray');
         }
     });
 }
