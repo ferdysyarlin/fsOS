@@ -1,117 +1,130 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="bg-gray-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>fsOS - Admin Dashboard</title>
+    <title>fsOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Lighter gray background */
-        }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #e5e7eb; }
-        ::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+        body { font-family: 'Inter', sans-serif; }
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-            20%, 40%, 60%, 80% { transform: translateX(5px); }
-        }
-        .shake { animation: shake 0.5s ease-in-out; }
-        .radio-label {
-            transition: all 0.2s ease-in-out;
-        }
-        .radio-input:checked + .radio-label {
-            background-color: #4f46e5;
-            color: white;
-            border-color: #4f46e5;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
         }
     </style>
 </head>
-<body class="text-gray-800">
+<body class="antialiased">
 
-    <!-- Modal Verifikasi PIN (Tidak ada perubahan) -->
+    <!-- Modal Verifikasi PIN -->
     <div id="pin-modal-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 transition-opacity duration-300">
-        <div id="pin-modal-content" class="bg-white p-8 rounded-xl shadow-2xl text-center w-full max-w-sm mx-4">
-            <h2 class="text-2xl font-bold mb-4">Verifikasi PIN</h2>
-            <p class="text-gray-600 mb-6">Masukkan PIN Anda untuk mengakses halaman admin.</p>
-            <form id="pin-form"><input type="password" id="pin-input" name="pin" class="text-center text-2xl tracking-[.5em] w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="••••" maxlength="4" required><p id="pin-error" class="text-red-500 text-sm mt-2 h-5"></p><button type="submit" class="mt-4 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Masuk</button></form>
+        <div id="pin-modal-content" class="w-full max-w-xs transform transition-all duration-300">
+             <form id="pin-form" class="flex items-center space-x-2">
+                <input type="password" id="pin-input" class="w-full text-white text-center text-lg tracking-[0.5em] bg-gray-800 bg-opacity-50 border-2 border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" maxlength="4" pattern="\d{4}" required>
+                <button type="submit" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l4 4m0 0l-4 4m4-4H3" /></svg>
+                </button>
+            </form>
+            <p id="pin-error" class="text-red-400 text-xs text-center mt-2 h-4"></p>
         </div>
     </div>
 
-    <!-- Modal Form Tambah Kinerja (Diperbarui) -->
-    <div id="form-modal-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-40 transition-opacity duration-300">
-        <div class="bg-white p-6 rounded-xl shadow-xl w-full max-w-lg mx-4">
-            <div class="flex justify-between items-center border-b pb-3 mb-6"><h2 class="text-2xl font-semibold">Tambah Kinerja Baru</h2><button id="close-form-modal" class="text-gray-400 hover:text-gray-600"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button></div>
-            <form id="kinerja-form">
-                <div class="space-y-6">
-                    <input type="hidden" id="jenis" name="jenis" value="Kinerja">
-                    <div>
-                        <label for="tanggal" class="block text-sm font-medium text-gray-700">Tanggal</label>
-                        <input type="date" id="tanggal" name="tanggal" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+    <!-- Konten Utama (Tersembunyi Awalnya) -->
+    <div id="main-content" class="hidden">
+        <header class="bg-white shadow-sm sticky top-0 z-10 rounded-b-xl">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-2xl font-bold text-gray-900">fsOS</span>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                        <div class="flex flex-wrap gap-2">
-                            <input type="radio" id="status-hadir" name="status" value="Hadir" class="sr-only radio-input" checked><label for="status-hadir" class="radio-label cursor-pointer py-2 px-3 border border-gray-300 rounded-md text-sm font-medium">Hadir</label>
-                            <input type="radio" id="status-lembur" name="status" value="Lembur" class="sr-only radio-input"><label for="status-lembur" class="radio-label cursor-pointer py-2 px-3 border border-gray-300 rounded-md text-sm font-medium">Lembur</label>
-                            <input type="radio" id="status-cuti" name="status" value="Cuti" class="sr-only radio-input"><label for="status-cuti" class="radio-label cursor-pointer py-2 px-3 border border-gray-300 rounded-md text-sm font-medium">Cuti</label>
-                            <input type="radio" id="status-dinas" name="status" value="Dinas" class="sr-only radio-input"><label for="status-dinas" class="radio-label cursor-pointer py-2 px-3 border border-gray-300 rounded-md text-sm font-medium">Dinas</label>
-                            <input type="radio" id="status-sakit" name="status" value="Sakit" class="sr-only radio-input"><label for="status-sakit" class="radio-label cursor-pointer py-2 px-3 border border-gray-300 rounded-md text-sm font-medium">Sakit</label>
-                            <input type="radio" id="status-st" name="status" value="ST" class="sr-only radio-input"><label for="status-st" class="radio-label cursor-pointer py-2 px-3 border border-gray-300 rounded-md text-sm font-medium">ST</label>
-                        </div>
+                    <a href="index.html" class="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors" title="Beranda">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <main class="py-8">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <div id="loading" class="text-center py-10"></div>
+                <div id="error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
+                    <strong class="font-bold">Gagal memuat data!</strong>
+                    <span class="block sm:inline" id="error-message"></span>
+                </div>
+                <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+                    <table id="kinerja-table" class="min-w-full divide-y divide-gray-200 hidden">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detail Kinerja</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File</th>
+                            </tr>
+                        </thead>
+                        <tbody id="kinerja-table-body" class="bg-white divide-y divide-gray-200">
+                            <!-- Data akan dimuat di sini -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Tombol Tambah Data (Floating) -->
+    <button id="add-data-button" class="hidden fixed bottom-8 right-8 bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition transform hover:scale-110">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+    </button>
+    
+    <!-- Modal Form Tambah Data -->
+    <div id="form-modal-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-40 transition-opacity">
+        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-lg m-4 transform transition-all">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">Tambah Kinerja Baru</h3>
+                <button id="close-form-modal" class="text-gray-400 hover:text-gray-600">&times;</button>
+            </div>
+            <form id="kinerja-form" class="space-y-6">
+                <!-- INPUT TERSEMBUNYI UNTUK ID KINERJA -->
+                <input type="hidden" id="id-kinerja-input" name="ID Kinerja">
+
+                <div>
+                    <label for="tanggal" class="block text-sm font-medium text-gray-700">Tanggal</label>
+                    <input type="date" name="tanggal" id="tanggal" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="kinerja" class="block text-sm font-medium text-gray-700">Detail Kinerja</label>
+                    <textarea name="kinerja" id="kinerja" rows="4" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                </div>
+                <div>
+                    <label for="file" class="block text-sm font-medium text-gray-700">Link File (Opsional)</label>
+                    <input type="url" name="file" id="file" placeholder="https://..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                 <input type="hidden" name="jenis" value="Kinerja">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 text-sm">
+                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="status" value="Hadir" class="mr-2" checked> Hadir</label>
+                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="status" value="Lembur" class="mr-2"> Lembur</label>
+                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="status" value="Cuti" class="mr-2"> Cuti</label>
+                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="status" value="Dinas" class="mr-2"> Dinas</label>
+                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="status" value="Sakit" class="mr-2"> Sakit</label>
+                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="status" value="ST" class="mr-2"> ST</label>
                     </div>
-                    <div>
-                        <label for="kinerja" class="block text-sm font-medium text-gray-700">Detail Kinerja</label>
-                        <textarea id="kinerja" name="kinerja" rows="4" placeholder="Jelaskan pekerjaan yang dilakukan..." required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
-                    </div>
-                    <div>
-                        <label for="file" class="block text-sm font-medium text-gray-700">Link File (Opsional)</label>
-                        <input type="url" id="file" name="file" placeholder="https://docs.google.com/..." class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                    </div>
-                    <div class="pt-2">
-                        <button type="submit" id="submit-button" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Simpan Kinerja</button>
-                    </div>
+                </div>
+                <div class="text-right">
+                    <button id="submit-button" type="type" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Simpan Kinerja
+                    </button>
                 </div>
             </form>
         </div>
     </div>
     
-    <!-- Konten Utama (Diperbarui) -->
-    <div id="main-content" class="hidden px-4 sm:px-6 lg:px-8">
-        <header class="bg-white shadow-sm rounded-b-xl p-4 md:p-5 mb-8 sticky top-0 z-10">
-            <div class="flex justify-between items-center">
-                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">fsOS</h1>
-                <a href="index.html" title="Kembali ke Beranda" class="text-gray-500 hover:text-indigo-600 p-2 rounded-full transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                </a>
-            </div>
-        </header>
-
-        <main class="bg-white rounded-xl shadow-md">
-            <div id="loading" class="text-center py-20"><p class="text-gray-500">Menunggu verifikasi...</p></div>
-            <div id="error" class="hidden text-center py-20 bg-red-50 p-4 rounded-lg"><p class="text-red-600 font-semibold">Gagal memuat data!</p><p class="text-red-500 text-sm mt-1" id="error-message"></p></div>
-            <div class="overflow-x-auto">
-                <table id="kinerja-table" class="min-w-full divide-y divide-gray-200 hidden">
-                    <thead class="bg-gray-50"><tr class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider"><th class="px-6 py-3">Tanggal</th><th class="px-6 py-3">Kinerja</th><th class="px-6 py-3">Status</th><th class="px-6 py-3">File</th></tr></thead>
-                    <tbody id="kinerja-table-body" class="bg-white divide-y divide-gray-200"></tbody>
-                </table>
-            </div>
-        </main>
-    </div>
-
-    <!-- Floating Button (Tidak ada perubahan) -->
-    <button id="add-data-button" class="hidden fixed bottom-6 right-6 bg-indigo-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-all transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 z-20">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-    </button>
-    
-    <script src="admin.js" defer></script>
+    <script src="admin.js"></script>
 </body>
 </html>
 
