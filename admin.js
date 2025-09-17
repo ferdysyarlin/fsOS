@@ -1,5 +1,5 @@
 // --- PENTING: Ganti dengan URL dan PIN Anda ---
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzp4e4NdMhIHWn-ekNPp3cRrwScj81yK-5MGDADuTrJ6LAisa2JcLXGqA_zaK3eFGV55A/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwfWTBx2Q_3upcAyIul1pP3V0OiffCtgVDdT8xWC2uQOX-Tw-nqcH-26vlGoP1svddtTg/exec';
 const CORRECT_PIN = '1234'; // Ganti dengan PIN 4 digit rahasia Anda
 
 // --- Elemen DOM ---
@@ -44,21 +44,17 @@ pinForm.addEventListener('submit', (e) => {
 
 // 2. Kontrol Modal Form & Pembuatan ID Kinerja
 addDataButton.addEventListener('click', () => {
-    // Reset form untuk entri baru
     form.reset();
     document.getElementById('tanggal').valueAsDate = new Date();
-    document.querySelector('input[name="status"][value="Hadir"]').checked = true;
+    document.querySelector('input[name="Status"][value="Hadir"]').checked = true;
 
-    // --- PEMBUATAN ID KINERJA SAAT MODAL DIBUKA ---
-    const tanggalInput = document.getElementById('tanggal').value; // Format: YYYY-MM-DD
-    const tanggalFormatted = tanggalInput.replace(/-/g, ''); // Menjadi YYYYMMDD
-    const randomString = Math.random().toString(36).substring(2, 7); // 5 karakter acak
+    const tanggalInput = document.getElementById('tanggal').value;
+    const tanggalFormatted = tanggalInput.replace(/-/g, '');
+    const randomString = Math.random().toString(36).substring(2, 7);
     const idKinerja = `${tanggalFormatted}-${randomString}`;
     
-    // Setel ID di input form yang tersembunyi
     document.getElementById('id-kinerja-input').value = idKinerja;
     
-    // Tampilkan modal
     formModalOverlay.classList.remove('hidden');
 });
 
@@ -98,10 +94,7 @@ function renderTable(data) {
             const row = `
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${formatDate(item.Tanggal)}</td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm font-medium text-gray-900">${item.Jenis || ''}</div>
-                        <div class="text-sm text-gray-500">${item.Deskripsi || ''}</div>
-                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${item.Deskripsi || ''}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(item.Status)}">${item.Status || ''}</span>
                     </td>
@@ -119,17 +112,21 @@ function renderTable(data) {
 // 4. Helper Functions
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
+    // Cek jika format sudah benar dari GAS (ada apostrof)
+    if (String(dateString).startsWith("'")) {
+         return dateString.replace(/'/g, ''); // Hapus apostrof untuk tampilan
+    }
+    // Jika format dari JavaScript Date object
     try {
-        if (String(dateString).includes('/')) {
-             return dateString.replace(/'/g, '');
-        }
         const date = new Date(dateString);
+        // Cek jika tanggal valid
+        if (isNaN(date.getTime())) return dateString;
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear();
         return `${day}/${month}/${year}`;
     } catch (e) {
-        return dateString;
+        return dateString; // Fallback
     }
 }
 
@@ -141,8 +138,6 @@ function getStatusColor(status) {
         case 'Dinas': return 'bg-yellow-100 text-yellow-800';
         case 'Sakit': return 'bg-orange-100 text-orange-800';
         case 'ST': return 'bg-green-100 text-green-800';
-        case 'Selesai': return 'bg-green-100 text-green-800';
-        case 'Revisi': return 'bg-red-100 text-red-800';
         default: return 'bg-pink-100 text-pink-800';
     }
 }
@@ -155,26 +150,21 @@ form.addEventListener('submit', async (e) => {
     
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
-    
-    // ID Kinerja sudah ada di dalam form data dari hidden input
-    
-    // Mengganti nama key 'kinerja' menjadi 'Deskripsi' agar cocok dengan header Sheet
-    data['Deskripsi'] = data['kinerja'];
-    delete data['kinerja'];
 
     try {
         await fetch(GAS_WEB_APP_URL, {
             method: 'POST',
-            mode: 'no-cors',
+            mode: 'no-cors', 
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data),
         });
         
         formModalOverlay.classList.add('hidden');
         
+        // Beri jeda sedikit agar Google Sheet sempat memproses data
         setTimeout(() => {
             fetchData();
-        }, 1000);
+        }, 1500); 
 
     } catch (error) {
         console.error('Error submitting data:', error);
