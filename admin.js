@@ -41,13 +41,23 @@ const fileLamaP = document.getElementById('file-lama');
 const deleteModalOverlay = document.getElementById('delete-modal-overlay');
 const cancelDeleteButton = document.getElementById('cancel-delete-button');
 const confirmDeleteButton = document.getElementById('confirm-delete-button');
+// Filter Elements
 const searchInput = document.getElementById('search-input');
-const searchInputMobile = document.getElementById('search-input-mobile');
 const statusFilter = document.getElementById('status-filter');
 const monthFilter = document.getElementById('month-filter');
 const yearFilter = document.getElementById('year-filter');
 const resetFilterButton = document.getElementById('reset-filter-button');
 const reloadDataButton = document.getElementById('reload-data-button');
+// Mobile Filter Elements
+const mobileFilterButton = document.getElementById('mobile-filter-button');
+const mobileFilterModal = document.getElementById('mobile-filter-modal');
+const closeMobileFilterButton = document.getElementById('close-mobile-filter-button');
+const applyMobileFilterButton = document.getElementById('apply-mobile-filter-button');
+const searchInputMobile = document.getElementById('search-input-mobile');
+const statusFilterMobile = document.getElementById('status-filter-mobile');
+const monthFilterMobile = document.getElementById('month-filter-mobile');
+const yearFilterMobile = document.getElementById('year-filter-mobile');
+
 
 // --- DEKLARASI FUNGSI ---
 
@@ -100,15 +110,15 @@ function renderDetail(data) {
     } catch (e) { console.error("Gagal parse JSON file:", e); }
 
     detailContent.innerHTML = `
+        <button onclick="hideDetailView()" class="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition">
+            <i data-lucide="x"></i>
+        </button>
         <div class="flex justify-between items-start">
             <div>
                 <label class="text-xs text-gray-500 uppercase font-semibold">ID Kinerja</label>
                 <p class="text-md text-gray-700 font-mono break-all">${data['ID Kinerja'] || '-'}</p>
             </div>
             <div class="text-right flex-shrink-0 ml-4">
-                 <button onclick="hideDetailView()" class="p-2 -mr-2 -mt-2 rounded-full hover:bg-gray-100 transition">
-                    <i data-lucide="x"></i>
-                </button>
                 <label class="text-xs text-gray-500 uppercase font-semibold">Tanggal</label>
                 <p class="text-md text-gray-900">${data.Tanggal || '-'}</p>
             </div>
@@ -374,19 +384,13 @@ function getStatusBadge(status) {
 function getPreviewThumbnail(fileJson) {
     let files = [];
     try { if (fileJson) files = JSON.parse(fileJson); } catch(e) {}
-    
     const firstImage = files.find(f => f.type.startsWith('image/'));
-
     if (firstImage) {
         const thumbnailUrl = createThumbnailUrl(firstImage.url);
         return `<img src="${thumbnailUrl}" class="w-10 h-10 rounded-md object-cover border" loading="lazy">`;
     }
-    
-    return `<div class="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center text-gray-400">
-                <i data-lucide="file-text" class="w-5 h-5"></i>
-            </div>`;
+    return `<div class="w-10 h-10 rounded-md bg-gray-100 flex items-center justify-center text-gray-400"><i data-lucide="file-text" class="w-5 h-5"></i></div>`;
 }
-
 
 function createEmbedUrl(originalUrl) {
     const match = originalUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/);
@@ -451,21 +455,21 @@ function showError(message) {
 
 function populateFilters() {
     const years = [...new Set(localData.map(item => item.Tanggal.split('/')[2]))].sort((a,b) => b-a);
-    yearFilter.innerHTML = '<option value="">Semua Tahun</option>';
-    years.forEach(year => yearFilter.innerHTML += `<option value="${year}">${year}</option>`);
+    const yearOptions = '<option value="">Semua Tahun</option>' + years.map(year => `<option value="${year}">${year}</option>`).join('');
+    yearFilter.innerHTML = yearOptions;
+    yearFilterMobile.innerHTML = yearOptions;
     
-    statusFilter.innerHTML = '<option value="">Semua Status</option>';
-    statusOptions.forEach(status => statusFilter.innerHTML += `<option value="${status}">${status}</option>`);
+    const statusOptionsHtml = '<option value="">Semua Status</option>' + statusOptions.map(status => `<option value="${status}">${status}</option>`).join('');
+    statusFilter.innerHTML = statusOptionsHtml;
+    statusFilterMobile.innerHTML = statusOptionsHtml;
 
-    monthFilter.innerHTML = '<option value="">Semua Bulan</option>';
-    monthNames.forEach((name, index) => {
-        const monthValue = String(index + 1).padStart(2, '0');
-        monthFilter.innerHTML += `<option value="${monthValue}">${name}</option>`;
-    });
+    const monthOptions = '<option value="">Semua Bulan</option>' + monthNames.map((name, index) => `<option value="${String(index + 1).padStart(2, '0')}">${name}</option>`).join('');
+    monthFilter.innerHTML = monthOptions;
+    monthFilterMobile.innerHTML = monthOptions;
 }
 
 function applyAndRenderFilters() {
-    const searchTerm = searchInput.value.toLowerCase() || searchInputMobile.value.toLowerCase();
+    const searchTerm = searchInput.value.toLowerCase();
     const status = statusFilter.value;
     const month = monthFilter.value;
     const year = yearFilter.value;
@@ -482,11 +486,24 @@ function applyAndRenderFilters() {
 
 function resetFilters() {
     searchInput.value = '';
-    searchInputMobile.value = '';
     statusFilter.value = '';
     monthFilter.value = '';
     yearFilter.value = '';
     applyAndRenderFilters();
+}
+
+function syncMobileFilters() {
+    searchInput.value = searchInputMobile.value;
+    statusFilter.value = statusFilterMobile.value;
+    monthFilter.value = monthFilterMobile.value;
+    yearFilter.value = yearFilterMobile.value;
+}
+
+function syncDesktopFilters() {
+    searchInputMobile.value = searchInput.value;
+    statusFilterMobile.value = statusFilter.value;
+    monthFilterMobile.value = monthFilter.value;
+    yearFilterMobile.value = yearFilter.value;
 }
 
 // --- EVENT LISTENERS ---
@@ -503,6 +520,19 @@ document.addEventListener('DOMContentLoaded', () => {
     fileInput.addEventListener('change', handleFileSelect);
     resetFilterButton.addEventListener('click', resetFilters);
     reloadDataButton.addEventListener('click', fetchData);
-    [searchInput, searchInputMobile, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
+    [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
+    
+    // Mobile Filter Listeners
+    mobileFilterButton.addEventListener('click', () => {
+        syncDesktopFilters();
+        mobileFilterModal.classList.remove('hidden');
+    });
+    closeMobileFilterButton.addEventListener('click', () => mobileFilterModal.classList.add('hidden'));
+    applyMobileFilterButton.addEventListener('click', () => {
+        syncMobileFilters();
+        applyAndRenderFilters();
+        mobileFilterModal.classList.add('hidden');
+    });
+
 });
 
