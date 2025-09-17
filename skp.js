@@ -2,34 +2,34 @@
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwIuNqfyRRnR8IaPIL7oVyfWwp9Vh1M6GStsAj-HKgCQ3C3BFDVLJMsuGXdRbaieNJcRQ/exec';
 
 let localSkpData = [];
+let loadingDiv, errorDiv, tableContainer;
 
-// --- Fungsi untuk mengambil data SKP (sekarang di-export) ---
+// --- Fungsi Fetch Data (Sekarang untuk Reload) ---
 export async function fetchData() {
-    const loadingDiv = document.getElementById('skp-loading');
-    const errorDiv = document.getElementById('skp-error');
-    loadingDiv.innerHTML = '<p>Memuat data SKP...</p>';
-    errorDiv.classList.add('hidden');
+    if(loadingDiv) loadingDiv.innerHTML = '<p>Memuat ulang data SKP...</p>';
+    if(errorDiv) errorDiv.classList.add('hidden');
     
     try {
         const response = await fetch(`${GAS_WEB_APP_URL}?page=skp`);
-        if (!response.ok) throw new Error('Gagal mengambil data SKP.');
-        
-        localSkpData = await response.json();
-        renderSkpData(localSkpData);
-        loadingDiv.innerHTML = '';
-
+        if (!response.ok) throw new Error('Gagal mengambil data SKP dari server.');
+        const freshData = await response.json();
+        localSkpData = freshData; // Perbarui cache lokal
+        return freshData;
     } catch (error) {
-        loadingDiv.innerHTML = '';
-        errorDiv.classList.remove('hidden');
-        errorDiv.textContent = error.message;
+        if(errorDiv) {
+            errorDiv.classList.remove('hidden');
+            errorDiv.textContent = error.message;
+        }
+        return localSkpData; // Kembalikan data lama jika gagal
     }
 }
 
-// --- Fungsi untuk merender tabel SKP ---
+// --- Fungsi Render ---
 function renderSkpData(data) {
-    const container = document.getElementById('skp-table-container');
-    if (!data.length) {
-        container.innerHTML = '<p class="text-gray-500">Belum ada data SKP.</p>';
+    if (!tableContainer) return;
+    
+    if (!data || data.length === 0) {
+        tableContainer.innerHTML = '<p class="text-gray-500 text-center py-10">Belum ada data SKP.</p>';
         return;
     }
 
@@ -48,24 +48,30 @@ function renderSkpData(data) {
         headers.forEach(header => {
             let cellValue = row[header] || '';
             if(header.toLowerCase() === 'file' && cellValue) {
-                cellValue = `<a href="${cellValue}" target="_blank" class="text-indigo-600 hover:underline">Lihat File</a>`;
+                cellValue = `<a href="${cellValue}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline inline-flex items-center gap-1">Lihat File <i data-lucide="external-link" class="w-4 h-4"></i></a>`;
             }
-            tableHTML += `<td class="px-6 py-4 whitespace-nowrap text-sm">${cellValue}</td>`;
+            tableHTML += `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${cellValue}</td>`;
         });
         tableHTML += `</tr>`;
     });
 
     tableHTML += `</tbody></table>`;
-    container.innerHTML = tableHTML;
+    tableContainer.innerHTML = tableHTML;
+    lucide.createIcons();
 }
 
-// --- Fungsi Inisialisasi ---
-export function init() {
-    console.log("Halaman SKP diinisialisasi.");
-    if (localSkpData.length > 0) {
-        renderSkpData(localSkpData);
-    } else {
-        fetchData();
-    }
+// --- Fungsi Inisialisasi (Diperbarui) ---
+export function init(dataFromCache) {
+    localSkpData = dataFromCache || [];
+    
+    // Hubungkan Elemen DOM
+    loadingDiv = document.getElementById('skp-loading');
+    errorDiv = document.getElementById('skp-error');
+    tableContainer = document.getElementById('skp-table-container');
+
+    console.log("Halaman SKP diinisialisasi dengan data cache.");
+    renderSkpData(localSkpData);
+
+    if (loadingDiv) loadingDiv.innerHTML = '';
 }
 
