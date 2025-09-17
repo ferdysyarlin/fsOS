@@ -3,9 +3,12 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyJX8CyFC12t9fH
 
 let localSkpData = [];
 
-// --- Fungsi untuk mengambil data SKP ---
-async function fetchSkpData() {
-    document.getElementById('skp-loading').innerHTML = '<p>Memuat data SKP...</p>';
+// --- Fungsi untuk mengambil data SKP (sekarang di-export) ---
+export async function fetchData() {
+    const loadingDiv = document.getElementById('skp-loading');
+    const errorDiv = document.getElementById('skp-error');
+    loadingDiv.innerHTML = '<p>Memuat data SKP...</p>';
+    errorDiv.classList.add('hidden');
     
     try {
         const response = await fetch(`${GAS_WEB_APP_URL}?page=skp`);
@@ -13,11 +16,10 @@ async function fetchSkpData() {
         
         localSkpData = await response.json();
         renderSkpData(localSkpData);
-        document.getElementById('skp-loading').innerHTML = '';
+        loadingDiv.innerHTML = '';
 
     } catch (error) {
-        document.getElementById('skp-loading').innerHTML = '';
-        const errorDiv = document.getElementById('skp-error');
+        loadingDiv.innerHTML = '';
         errorDiv.classList.remove('hidden');
         errorDiv.textContent = error.message;
     }
@@ -63,6 +65,7 @@ export function init() {
     if (localSkpData.length > 0) {
         renderSkpData(localSkpData);
     } else {
-        fetchSkpData();
+        fetchData();
     }
 }
+
