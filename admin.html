@@ -62,14 +62,11 @@
                               <select id="status-filter" class="w-36 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select>
                               <select id="month-filter" class="w-36 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select>
                               <select id="year-filter" class="w-28 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select>
+                              <button id="reset-filter-button" class="p-2 rounded-lg border bg-gray-100 text-gray-600 hover:bg-gray-200 transition" aria-label="Reset Filter">
+                                  <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                              </button>
                           </div>
-                          <!-- Tombol Aksi -->
-                          <button id="reset-filter-button" class="p-2 rounded-lg border bg-gray-100 text-gray-600 hover:bg-gray-200 transition" aria-label="Reset Filter">
-                              <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
-                          </button>
-                          <button id="mobile-filter-button" class="md:hidden p-2 rounded-lg border bg-gray-100 text-gray-600 hover:bg-gray-200 transition" aria-label="Buka Filter">
-                              <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
-                          </button>
+                          <!-- Tombol Aksi Umum -->
                            <button id="reload-data-button" class="p-2 rounded-lg border bg-gray-100 text-gray-600 hover:bg-gray-200 transition" aria-label="Muat Ulang Data">
                               <i data-lucide="refresh-cw" class="w-5 h-5"></i>
                           </button>
@@ -78,9 +75,15 @@
                           </a>
                       </div>
                  </div>
-                 <!-- Pencarian Mobile -->
-                 <div class="md:hidden">
-                     <input type="search" id="search-input-mobile" placeholder="Cari deskripsi..." class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm">
+                 <!-- Pencarian & Filter Mobile -->
+                 <div class="md:hidden flex items-center gap-2">
+                     <input type="search" id="search-input-mobile" placeholder="Cari deskripsi..." class="flex-grow px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm">
+                     <button id="mobile-filter-button" class="p-2 rounded-lg border bg-gray-100 text-gray-600 hover:bg-gray-200 transition" aria-label="Buka Filter">
+                        <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
+                     </button>
+                     <button id="reset-filter-button-mobile" class="p-2 rounded-lg border bg-gray-100 text-gray-600 hover:bg-gray-200 transition" aria-label="Reset Filter">
+                        <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                    </button>
                  </div>
             </div>
         </header>
