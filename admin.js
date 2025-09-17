@@ -4,6 +4,13 @@ import { init as initDashboard, fetchData as fetchDashboardData } from './dashbo
 
 // --- Konfigurasi ---
 const CORRECT_PIN = '1234';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwIuNqfyRRnR8IaPIL7oVyfWwp9Vh1M6GStsAj-HKgCQ3C3BFDVLJMsuGXdRbaieNJcRQ/exec';
+
+// --- Cache Data Global ---
+const appDataCache = {
+    kinerja: null,
+    skp: null
+};
 
 // --- Elemen DOM Global ---
 const pinModalOverlay = document.getElementById('pin-modal-overlay');
@@ -14,24 +21,45 @@ const sidebarOverlay = document.getElementById('sidebar-overlay');
 const hamburgerButton = document.getElementById('hamburger-button');
 const reloadDataButton = document.getElementById('reload-data-button');
 const navLinks = document.querySelectorAll('.nav-link');
-const addDataButton = document.getElementById('add-data-button'); // Sekarang akan ditemukan
+const addDataButton = document.getElementById('add-data-button');
 let currentPage = 'dashboard';
 
-// --- Logika Utama ---
+// --- Logika Pemuatan & Caching Data ---
+async function preloadAllData() {
+    try {
+        const [kinerjaRes, skpRes] = await Promise.all([
+            fetch(`${GAS_WEB_APP_URL}?page=kinerja`),
+            fetch(`${GAS_WEB_APP_URL}?page=skp`)
+        ]);
+        if (!kinerjaRes.ok || !skpRes.ok) throw new Error('Gagal mengambil data awal.');
+        
+        appDataCache.kinerja = await kinerjaRes.json();
+        appDataCache.skp = await skpRes.json();
+        
+        console.log("Semua data awal berhasil dimuat dan disimpan di cache.");
+    } catch (error) {
+        console.error("Error saat preloading data:", error);
+        throw error;
+    }
+}
 
+// --- Logika Utama (Navigasi) ---
 async function showView(pageName) {
     currentPage = pageName;
     contentContainer.innerHTML = `<div class="text-center py-10"><p class="flex items-center justify-center gap-2 text-gray-500"><i data-lucide="loader-2" class="animate-spin"></i> Memuat halaman...</p></div>`;
     lucide.createIcons();
     closeSidebar();
     updateActiveLink();
-
+    
     // Tampilkan/sembunyikan tombol tambah berdasarkan halaman
-    if (pageName === 'kinerja') {
-        addDataButton.classList.remove('hidden');
-    } else {
-        addDataButton.classList.add('hidden');
+    if (addDataButton) {
+        if (pageName === 'kinerja') {
+            addDataButton.classList.remove('hidden');
+        } else {
+            addDataButton.classList.add('hidden');
+        }
     }
+
 
     try {
         const response = await fetch(`${pageName}.html`);
@@ -40,11 +68,11 @@ async function showView(pageName) {
         contentContainer.innerHTML = await response.text();
         
         if (pageName === 'dashboard') {
-            initDashboard();
+            initDashboard(appDataCache.kinerja, appDataCache.skp);
         } else if (pageName === 'kinerja') {
-            initKinerja();
+            initKinerja(appDataCache.kinerja);
         } else if (pageName === 'skp') {
-            initSkp();
+            initSkp(appDataCache.skp);
         }
 
     } catch (error) {
@@ -71,17 +99,32 @@ function updateActiveLink() {
 
 
 // --- Verifikasi PIN ---
-function handlePinSubmit(e) {
+async function handlePinSubmit(e) {
     e.preventDefault();
     const pinInput = document.getElementById('pin-input');
     const pinError = document.getElementById('pin-error');
-    const pinModalContent = pinModalOverlay.querySelector('div');
+    const pinForm = document.getElementById('pin-form');
+    const submitButton = pinForm.querySelector('button[type="submit"]');
 
     if (pinInput.value === CORRECT_PIN) {
-        pinModalOverlay.classList.add('opacity-0', 'pointer-events-none');
-        mainAppContainer.classList.remove('hidden');
-        showView('dashboard'); 
+        submitButton.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-5 h-5"></i>`;
+        lucide.createIcons();
+        submitButton.disabled = true;
+
+        try {
+            await preloadAllData();
+            pinModalOverlay.classList.add('opacity-0', 'pointer-events-none');
+            mainAppContainer.classList.remove('hidden');
+            showView('dashboard'); 
+        } catch (error) {
+            pinError.textContent = 'Gagal memuat data awal.';
+            submitButton.innerHTML = `<i data-lucide="arrow-right" class="w-5 h-5"></i>`;
+            lucide.createIcons();
+            submitButton.disabled = false;
+        }
+
     } else {
+        const pinModalContent = pinModalOverlay.querySelector('div');
         pinError.textContent = 'PIN salah, coba lagi.';
         if(pinModalContent) pinModalContent.classList.add('shake');
         pinInput.value = '';
@@ -92,15 +135,23 @@ function handlePinSubmit(e) {
     }
 }
 
-function reloadCurrentPageData() {
-    if (currentPage === 'dashboard') {
-        fetchDashboardData();
-    } else if (currentPage === 'kinerja') {
-        fetchKinerjaData();
-    } else if (currentPage === 'skp') {
-        fetchSkpData();
+// --- Fungsi Reload Data ---
+async function reloadCurrentPageData() {
+    console.log(`Memuat ulang data untuk halaman: ${currentPage}`);
+    try {
+        if (currentPage === 'dashboard') {
+            await preloadAllData();
+        } else if (currentPage === 'kinerja') {
+            appDataCache.kinerja = await fetchKinerjaData();
+        } else if (currentPage === 'skp') {
+            appDataCache.skp = await fetchSkpData();
+        }
+        showView(currentPage);
+    } catch (error) {
+         contentContainer.innerHTML = `<div class="text-center py-10 bg-red-50 p-4 rounded-lg"><p class="font-semibold text-red-700">Gagal memuat ulang data</p><p class="text-red-600 text-sm">${error.message}</p></div>`;
     }
 }
+
 
 // --- Inisialisasi & Event Listeners ---
 document.addEventListener('DOMContentLoaded', () => {
