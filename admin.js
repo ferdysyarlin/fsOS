@@ -72,10 +72,12 @@ function handlePinSubmit(e) {
         showView('kinerja'); 
     } else {
         pinError.textContent = 'PIN salah, coba lagi.';
-        pinModalContent.classList.add('shake');
+        if(pinModalContent) pinModalContent.classList.add('shake');
         pinInput.value = '';
         pinInput.focus();
-        setTimeout(() => pinModalContent.classList.remove('shake'), 500);
+        setTimeout(() => {
+            if(pinModalContent) pinModalContent.classList.remove('shake');
+        }, 500);
     }
 }
 
