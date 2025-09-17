@@ -532,7 +532,10 @@ function applyAndRenderFilters() {
     filteredData.sort((a, b) => {
         const pinA = a.Pin === true || a.Pin === 'TRUE' ? 1 : 0;
         const pinB = b.Pin === true || b.Pin === 'TRUE' ? 1 : 0;
-        return pinB - pinA;
+        if (pinB !== pinA) return pinB - pinA;
+        // If pins are the same, you might want a secondary sort, e.g., by date
+        // For now, it maintains original relative order for items with same pin status
+        return 0;
     });
 
     renderData(filteredData);
@@ -582,11 +585,23 @@ function renderColorButtons() {
 
 function setActiveColor(activeColor) {
     warnaInput.value = activeColor === 'default' ? '' : activeColor;
+    
+    const ringColorValues = {
+        blue: '#3b82f6',   // Tailwind blue-500
+        green: '#22c55e',  // Tailwind green-500
+        yellow: '#eab308', // Tailwind yellow-500
+        red: '#ef4444',    // Tailwind red-500
+        purple: '#8b5cf6', // Tailwind purple-500
+        default: '#9ca3af' // Tailwind gray-400
+    };
+
     colorContainer.querySelectorAll('.color-swatch').forEach(btn => {
         const btnColor = btn.dataset.color;
-        btn.classList.toggle('selected', btnColor === activeColor);
-        if(btn.classList.contains('selected')) {
-            btn.style.setProperty('--ring-color', colorClasses[btnColor] || 'gray');
+        const isSelected = btnColor === activeColor;
+        btn.classList.toggle('selected', isSelected);
+
+        if (isSelected) {
+            btn.style.setProperty('--ring-color', ringColorValues[btnColor]);
         }
     });
 }
