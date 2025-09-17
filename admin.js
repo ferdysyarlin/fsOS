@@ -1,5 +1,5 @@
 // --- PENTING: Ganti dengan URL dan PIN Anda ---
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzYEXc3pfJaxM3o67CvwZlxUoqgn9faF3yRfi0uUgLFeADPIeuAcHpQLgPaCe6Xt5DOeQ/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyJX8CyFC12t9fHQxCrsr8tjxMcoPVelJX8HkkPGmyGyIgNjdHnYUrMUhlUU7SzEenR/exec';
 const CORRECT_PIN = '1234'; // Ganti dengan PIN 4 digit rahasia Anda
 
 // --- Variabel Global ---
@@ -63,7 +63,6 @@ const monthFilter = document.getElementById('month-filter');
 const yearFilter = document.getElementById('year-filter');
 const resetFilterButton = document.getElementById('reset-filter-button');
 const reloadDataButton = document.getElementById('reload-data-button');
-// Mobile Filter Elements
 const mobileFilterButton = document.getElementById('mobile-filter-button');
 const mobileFilterModal = document.getElementById('mobile-filter-modal');
 const closeMobileFilterButton = document.getElementById('close-mobile-filter-button');
@@ -643,6 +642,7 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', handleFormSubmit);
     fileInput.addEventListener('change', handleFileSelect);
     resetFilterButton.addEventListener('click', resetFilters);
+    resetFilterButtonMobile.addEventListener('click', resetFilters);
     reloadDataButton.addEventListener('click', fetchData);
     [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
     searchInputMobile.addEventListener('input', applyAndRenderFilters);
@@ -657,5 +657,16 @@ document.addEventListener('DOMContentLoaded', () => {
         applyAndRenderFilters();
         mobileFilterModal.classList.add('hidden');
     });
+
+    // Registrasi Service Worker untuk PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').then(registration => {
+                console.log('ServiceWorker: Registrasi berhasil dengan cakupan: ', registration.scope);
+            }, err => {
+                console.log('ServiceWorker: Registrasi gagal: ', err);
+            });
+        });
+    }
 });
 
