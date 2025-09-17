@@ -5,44 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ferdy Syarlin - The Archivist</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- PWA Manifest & Theme Color -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .gradient-bg {
-            background-color: #f0f4f8;
-            background-image: radial-gradient(circle at top left, #e0e7ff, transparent 40%),
-                              radial-gradient(circle at bottom right, #c7d2fe, transparent 50%);
-        }
+        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body class="gradient-bg text-gray-800 flex justify-center min-h-screen pt-20 md:pt-24">
-
-    <div class="text-center p-8 bg-white/70 backdrop-blur-xl rounded-2xl shadow-lg max-w-2xl mx-4 h-fit">
-        <!-- Foto Profil -->
-        <img src="https://media.licdn.com/dms/image/v2/D5603AQEpA9jkurD_bg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1725087745202?e=1761177600&v=beta&t=mUVRQyYr5KARQ1PUOELxlMvt2AfIQJ5oHnb7cVcRgBI" alt="Foto Profil Ferdy Syarlin" class="w-32 h-32 rounded-full mx-auto mb-6 ring-4 ring-white/50">
-
-        <!-- Informasi Diri -->
-        <h1 class="text-3xl md:text-4xl font-bold text-gray-900">Ferdy Syarlin</h1>
-        <p class="text-lg md:text-xl text-indigo-600 mt-2 font-medium">The Archivist IAIN Bone</p>
-        
-        <!-- Email -->
-        <div class="mt-6 flex items-center justify-center space-x-2 text-gray-600">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            <a href="mailto:ferdysyarlin@gmail.com" class="hover:text-indigo-600 transition-colors">ferdysyarlin@gmail.com</a>
-        </div>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <!-- Konten CV Anda -->
+    <div class="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full text-center">
+        <img class="w-32 h-32 rounded-full mx-auto -mt-20 border-8 border-white shadow-md" 
+             src="https://media.licdn.com/dms/image/v2/D5603AQEpA9jkurD_bg/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1725087745202?e=1761177600&v=beta&t=mUVRQyYr5KARQ1PUOELxlMvt2AfIQJ5oHnb7cVcRgBI" 
+             alt="Foto Profil Ferdy Syarlin">
+        <h1 class="text-xl font-bold text-gray-800 mt-4">Ferdy Syarlin</h1>
+        <p class="text-sm text-gray-500">The Archivist IAIN Bone</p>
+        <p class="text-sm text-gray-600 mt-4">
+            <a href="mailto:ferdysyarlin@gmail.com" class="hover:underline">ferdysyarlin@gmail.com</a>
+        </p>
     </div>
 
-    <!-- Tombol Login Mengambang (Floating Button) -->
-    <a href="admin.html" title="Masuk ke Halaman Admin" class="fixed bottom-6 right-6 bg-indigo-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-all transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-        </svg>
+    <!-- Tombol Admin Mengambang -->
+    <a href="admin.html" class="fixed bottom-6 right-6 bg-indigo-600 text-white p-3 rounded-full shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 transition transform hover:scale-110">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-log-in"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
     </a>
-
 </body>
 </html>
 
