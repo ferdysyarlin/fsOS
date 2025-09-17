@@ -22,7 +22,7 @@ const colorClasses = {
     'yellow': 'bg-yellow-300',
     'red': 'bg-red-300',
     'purple': 'bg-purple-300',
-};
+}
 
 // --- Variabel DOM ---
 let listView, detailView, tableBody, cardContainer, detailContent, formModalOverlay,
@@ -62,7 +62,7 @@ export function init() {
     statusFilter = document.getElementById('status-filter');
     monthFilter = document.getElementById('month-filter');
     yearFilter = document.getElementById('year-filter');
-    resetFilterButton = document.getElementById('reset-filter-button');
+    resetFilterButton = document.querySelector('#list-view #reset-filter-button'); 
     mobileFilterButton = document.getElementById('mobile-filter-button');
     mobileFilterModal = document.getElementById('mobile-filter-modal');
     closeMobileFilterButton = document.getElementById('close-mobile-filter-button');
@@ -82,7 +82,7 @@ export function init() {
 
     // Memasang Event Listeners
     addDataButton.addEventListener('click', openCreateForm);
-    listView.addEventListener('click', handleBodyClick);
+    listView.addEventListener('click', handleBodyClick); 
     closeFormModalButton.addEventListener('click', closeFormModal);
     formModalOverlay.addEventListener('click', (e) => { if (e.target === formModalOverlay) closeFormModal() });
     cancelDeleteButton.addEventListener('click', () => deleteModalOverlay.classList.add('hidden'));
@@ -119,7 +119,7 @@ export function init() {
 export async function fetchData() {
     showLoading();
     try {
-        const response = await fetch(GAS_WEB_APP_URL);
+        const response = await fetch(`${GAS_WEB_APP_URL}?page=kinerja`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         localData = await response.json();
         populateFilters();
@@ -165,7 +165,7 @@ function renderDetail(data) {
     } catch (e) { console.error("Gagal parse JSON file:", e); }
 
     detailContent.innerHTML = `
-        <button onclick="hideDetailView()" class="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
+        <button id="detail-back-button" class="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
             <i data-lucide="arrow-left" class="w-4 h-4"></i>
             Kembali
         </button>
@@ -191,6 +191,7 @@ function renderDetail(data) {
             <div class="mt-2">${renderFilePreviews(files)}</div>
         </div>
     `;
+    document.getElementById('detail-back-button').onclick = hideDetailView;
     lucide.createIcons();
 }
 
@@ -512,15 +513,15 @@ function getStatusColor(status) {
 function showLoading() {
     loadingDiv.innerHTML = '<p class="text-gray-500">Memuat data...</p>';
     loadingDiv.style.display = 'block';
-    if(tableBody.parentElement) tableBody.parentElement.classList.add('hidden');
-    cardContainer.classList.add('hidden');
-    errorDiv.classList.add('hidden');
+    if(tableBody && tableBody.parentElement) tableBody.parentElement.classList.add('hidden');
+    if(cardContainer) cardContainer.classList.add('hidden');
+    if(errorDiv) errorDiv.classList.add('hidden');
 }
 
 function hideLoading() {
     loadingDiv.style.display = 'none';
-    if(tableBody.parentElement) tableBody.parentElement.classList.remove('hidden');
-    cardContainer.classList.remove('hidden');
+    if(tableBody && tableBody.parentElement) tableBody.parentElement.classList.remove('hidden');
+    if(cardContainer) cardContainer.classList.remove('hidden');
 }
 
 function showError(message) {
@@ -615,12 +616,12 @@ function setActiveColor(activeColor) {
     warnaInput.value = activeColor === 'default' ? '' : activeColor;
     
     const ringColorValues = {
-        blue: '#93c5fd',   // Tailwind blue-300
-        green: '#86efac',  // Tailwind green-300
-        yellow: '#fde047', // Tailwind yellow-300
-        red: '#fca5a5',    // Tailwind red-300
-        purple: '#c4b5fd', // Tailwind purple-300
-        default: '#9ca3af' // Tailwind gray-400
+        blue: '#93c5fd',
+        green: '#86efac',
+        yellow: '#fde047',
+        red: '#fca5a5',
+        purple: '#c4b5fd',
+        default: '#9ca3af'
     };
 
     colorContainer.querySelectorAll('.color-swatch').forEach(btn => {
