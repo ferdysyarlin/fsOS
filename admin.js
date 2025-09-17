@@ -14,7 +14,8 @@ const sidebarOverlay = document.getElementById('sidebar-overlay');
 const hamburgerButton = document.getElementById('hamburger-button');
 const reloadDataButton = document.getElementById('reload-data-button');
 const navLinks = document.querySelectorAll('.nav-link');
-let currentPage = 'dashboard'; // Halaman default diubah menjadi dashboard
+const addDataButton = document.getElementById('add-data-button'); // Tombol tambah kinerja
+let currentPage = 'dashboard';
 
 // --- Logika Utama ---
 
@@ -24,6 +25,13 @@ async function showView(pageName) {
     lucide.createIcons();
     closeSidebar();
     updateActiveLink();
+
+    // Tampilkan/sembunyikan tombol tambah berdasarkan halaman
+    if (pageName === 'kinerja') {
+        addDataButton.classList.remove('hidden');
+    } else {
+        addDataButton.classList.add('hidden');
+    }
 
     try {
         const response = await fetch(`${pageName}.html`);
@@ -72,7 +80,7 @@ function handlePinSubmit(e) {
     if (pinInput.value === CORRECT_PIN) {
         pinModalOverlay.classList.add('opacity-0', 'pointer-events-none');
         mainAppContainer.classList.remove('hidden');
-        showView('dashboard'); // Tampilkan dasbor setelah login
+        showView('dashboard'); 
     } else {
         pinError.textContent = 'PIN salah, coba lagi.';
         if(pinModalContent) pinModalContent.classList.add('shake');
