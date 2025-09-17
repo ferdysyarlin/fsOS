@@ -9,15 +9,25 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- PWA Manifest & Theme -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="fsOS">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png"> <!-- Ganti dengan path ikon Anda -->
+    <link rel="icon" href="/favicon.ico" type="image/x-icon"> <!-- Ganti dengan path ikon Anda -->
+
     <style>
         body { font-family: 'Inter', sans-serif; }
         .shake { animation: shake 0.5s; }
         @keyframes shake {
             0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); }
         }
-        .active-item { background-color: #eff6ff; }
         #sidebar { transition: transform 0.3s ease-in-out; }
         #sidebar-overlay { transition: opacity 0.3s ease-in-out; }
+        .nav-link.active { background-color: #eff6ff; color: #3b82f6; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
@@ -36,8 +46,8 @@
                 <h2 class="text-lg font-bold p-2 mb-2">Menu Navigasi</h2>
                 <nav>
                     <ul>
-                        <li><a href="#" class="nav-link flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 font-semibold text-gray-700" data-page="kinerja"><i data-lucide="layout-dashboard" class="w-5 h-5"></i> Kinerja Harian</a></li>
-                        <li><a href="#" class="nav-link flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 font-semibold text-gray-700" data-page="skp"><i data-lucide="file-check-2" class="w-5 h-5"></i> SKP Tahunan</a></li>
+                        <li><a href="#" class="nav-link flex items-center gap-3 p-2 rounded-lg font-semibold text-gray-700" data-page="kinerja"><i data-lucide="layout-dashboard" class="w-5 h-5"></i> Kinerja Harian</a></li>
+                        <li><a href="#" class="nav-link flex items-center gap-3 p-2 rounded-lg font-semibold text-gray-700" data-page="skp"><i data-lucide="file-check-2" class="w-5 h-5"></i> SKP Tahunan</a></li>
                     </ul>
                 </nav>
             </div>
