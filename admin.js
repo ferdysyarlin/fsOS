@@ -80,11 +80,9 @@ formModalOverlay.addEventListener('click', (e) => {
 
 statusContainer.addEventListener('click', (e) => {
     if (e.target.matches('.status-btn')) {
-        // Hapus kelas 'selected' dari semua tombol
         statusContainer.querySelectorAll('.status-btn').forEach(btn => {
             btn.classList.remove('selected', ...getStatusColor(btn.dataset.value).split(' '));
         });
-        // Tambah kelas 'selected' ke tombol yang diklik
         e.target.classList.add('selected', ...getStatusColor(e.target.dataset.value).split(' '));
         statusInput.value = e.target.dataset.value;
     }
@@ -149,11 +147,15 @@ form.addEventListener('submit', async (e) => {
     
     // --- Optimistic UI Step 1: Update UI immediately ---
     const newRowHTML = createTableRow(temporaryData);
-    const tempRow = document.createElement('tbody'); // Create a temporary container
+    const tempRow = document.createElement('tbody');
     tempRow.innerHTML = newRowHTML;
     tempRow.firstElementChild.classList.add('new-row-highlight');
     
-    tableBody.prepend(tempRow.firstElementChild);
+    if (tableBody.firstChild) {
+        tableBody.insertBefore(tempRow.firstElementChild, tableBody.firstChild);
+    } else {
+        tableBody.appendChild(tempRow.firstElementChild);
+    }
     formModalOverlay.classList.add('hidden');
 
     // --- Optimistic UI Step 2: Send data to server in background ---
@@ -189,17 +191,19 @@ form.addEventListener('submit', async (e) => {
 });
 
 async function sendDataToServer(data) {
+    // PERBAIKAN ERROR CORS: Mengirim data sebagai text/plain
     const response = await fetch(GAS_WEB_APP_URL, {
         method: 'POST',
         body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+        },
     });
-    // For no-cors, we can't check response.ok, but we can catch network errors
+
     if (response && response.type === 'error') {
       throw new Error('Network error');
     }
 }
-
 
 // 5. Helper Functions
 function createKinerjaId() {
