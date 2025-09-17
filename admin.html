@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id" class="bg-gray-50">
+<html lang="id" class="h-full bg-gray-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>fsOS Admin</title>
+    <title>Admin Dashboard - fsOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,46 +17,65 @@
             30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
             40%, 60% { transform: translate3d(4px, 0, 0); }
         }
+        .status-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .status-btn.selected {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .new-row-highlight {
+            animation: highlight 2s ease-out;
+        }
+        @keyframes highlight {
+            0% { background-color: #dbeafe; }
+            100% { background-color: transparent; }
+        }
     </style>
 </head>
-<body class="antialiased">
+<body class="h-full">
 
-    <!-- Modal Verifikasi PIN -->
-    <div id="pin-modal-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 transition-opacity duration-300">
-        <div id="pin-modal-content" class="w-full max-w-xs transform transition-all duration-300">
-             <form id="pin-form" class="flex items-center space-x-2">
-                <input type="password" id="pin-input" class="w-full text-white text-center text-lg tracking-[0.5em] bg-gray-800 bg-opacity-50 border-2 border-gray-600 rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none" maxlength="4" pattern="\d{4}" required>
-                <button type="submit" class="bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l4 4m0 0l-4 4m4-4H3" /></svg>
+    <!-- Latar Belakang Verifikasi PIN -->
+    <div id="pin-modal-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-75 backdrop-blur-sm transition-opacity duration-300">
+        <div id="pin-modal-content" class="w-full max-w-xs p-4">
+            <form id="pin-form" class="flex items-center gap-2">
+                <input type="password" id="pin-input" name="pin" class="block w-full rounded-md border-0 bg-white/10 py-2.5 px-4 text-white text-center text-2xl tracking-[0.5em] shadow-sm ring-1 ring-inset ring-white/20 focus:ring-2 focus:ring-inset focus:ring-indigo-500" autocomplete="off" maxlength="4" pattern="\d{4}" required>
+                <button type="submit" class="p-3 rounded-md bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                    </svg>
                 </button>
             </form>
-            <p id="pin-error" class="text-red-400 text-xs text-center mt-2 h-4"></p>
+            <p id="pin-error" class="text-red-400 text-center text-sm mt-3"></p>
         </div>
     </div>
 
     <!-- Konten Utama (Tersembunyi Awalnya) -->
-    <div id="main-content" class="hidden">
-        <header class="bg-white shadow-sm sticky top-0 z-10 rounded-b-xl">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center h-16">
-                    <div class="flex items-center space-x-4">
-                        <span class="text-2xl font-bold text-gray-900">fsOS</span>
+    <main id="main-content" class="hidden h-full">
+        <div class="flex flex-col h-full">
+            <!-- Header -->
+            <header class="bg-white shadow-sm">
+                <div class="mx-auto w-full px-4 sm:px-6 lg:px-8">
+                    <div class="flex h-16 items-center justify-between">
+                        <div class="flex items-center">
+                            <h1 class="text-xl font-bold tracking-tight text-gray-900">fsOS</h1>
+                        </div>
+                        <a href="index.html" class="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                            </svg>
+                        </a>
                     </div>
-                    <a href="index.html" class="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors" title="Beranda">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-                    </a>
                 </div>
-            </div>
-        </header>
+            </header>
 
-        <main class="py-8">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div id="loading" class="text-center py-10"></div>
-                <div id="error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
-                    <strong class="font-bold">Gagal memuat data!</strong>
-                    <span class="block sm:inline" id="error-message"></span>
-                </div>
-                <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+            <!-- Area Tabel -->
+            <div class="flex-grow overflow-y-auto p-4 sm:p-6 lg:p-8">
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div id="loading" class="px-6 py-10 text-center"></div>
+                    <div id="error" class="hidden p-6 text-center">
+                        <p class="text-red-600">Gagal memuat data. <span id="error-message"></span></p>
+                    </div>
                     <table id="kinerja-table" class="min-w-full divide-y divide-gray-200 hidden">
                         <thead class="bg-gray-50">
                             <tr>
@@ -67,60 +86,64 @@
                             </tr>
                         </thead>
                         <tbody id="kinerja-table-body" class="bg-white divide-y divide-gray-200">
-                            <!-- Data akan dimuat di sini -->
+                            <!-- Data akan dimuat di sini oleh JavaScript -->
                         </tbody>
                     </table>
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 
-    <!-- Tombol Tambah Data (Floating) -->
-    <button id="add-data-button" class="hidden fixed bottom-8 right-8 bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition transform hover:scale-110">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+    <!-- Tombol Tambah Mengambang -->
+    <button id="add-data-button" type="button" class="hidden fixed bottom-8 right-8 inline-flex items-center gap-x-2 rounded-full bg-indigo-600 p-4 text-sm font-semibold text-white shadow-lg hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
+            <path fill-rule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
+        </svg>
     </button>
     
     <!-- Modal Form Tambah Data -->
-    <div id="form-modal-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-40 transition-opacity">
-        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-lg m-4 transform transition-all">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-2xl font-bold text-gray-800">Tambah Kinerja Baru</h3>
-                <button id="close-form-modal" class="text-gray-400 hover:text-gray-600">&times;</button>
-            </div>
-            <form id="kinerja-form" class="space-y-6">
-                <input type="hidden" id="id-kinerja-input" name="ID Kinerja">
+    <div id="form-modal-overlay" class="hidden fixed inset-0 z-40 bg-gray-900 bg-opacity-50 backdrop-blur-sm">
+        <div class="flex items-center justify-center min-h-full p-4">
+            <form id="kinerja-form" class="w-full max-w-lg bg-white rounded-lg shadow-xl p-6 space-y-6">
+                <input type="hidden" id="id-kinerja" name="ID Kinerja">
+                
                 <div>
-                    <label for="tanggal" class="block text-sm font-medium text-gray-700">Tanggal</label>
-                    <input type="date" name="Tanggal" id="tanggal" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                </div>
-                <div>
-                    <label for="deskripsi" class="block text-sm font-medium text-gray-700">Deskripsi</label>
-                    <textarea name="Deskripsi" id="deskripsi" rows="4" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
-                </div>
-                <div>
-                    <label for="file" class="block text-sm font-medium text-gray-700">Link File (Opsional)</label>
-                    <input type="url" name="File" id="file" placeholder="https://..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 text-sm">
-                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="Status" value="Hadir" class="mr-2" checked> Hadir</label>
-                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="Status" value="Lembur" class="mr-2"> Lembur</label>
-                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="Status" value="Cuti" class="mr-2"> Cuti</label>
-                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="Status" value="Dinas" class="mr-2"> Dinas</label>
-                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="Status" value="Sakit" class="mr-2"> Sakit</label>
-                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="Status" value="ST" class="mr-2"> ST</label>
+                    <label for="tanggal" class="block text-sm font-medium leading-6 text-gray-900">Tanggal</label>
+                    <div class="mt-2">
+                        <input type="date" name="Tanggal" id="tanggal" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" required>
                     </div>
                 </div>
-                <div class="text-right">
-                    <button id="submit-button" type="submit" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        Simpan Kinerja
-                    </button>
+
+                <div>
+                    <label for="deskripsi" class="block text-sm font-medium leading-6 text-gray-900">Deskripsi Kinerja</label>
+                    <div class="mt-2">
+                        <textarea id="deskripsi" name="Deskripsi" rows="3" class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6" required></textarea>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium leading-6 text-gray-900">Status</label>
+                    <input type="hidden" id="status-input" name="Status" value="Hadir">
+                    <div id="status-container" class="mt-2 grid grid-cols-3 sm:grid-cols-6 gap-2">
+                        <!-- Tombol Status akan dibuat oleh JavaScript -->
+                    </div>
+                </div>
+
+                <div>
+                    <label for="file-upload" class="block text-sm font-medium leading-6 text-gray-900">Unggah File (Opsional)</label>
+                    <div class="mt-2">
+                         <input type="file" name="file-upload" id="file-upload" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-x-4 pt-4">
+                    <button type="button" id="close-form-modal" class="text-sm font-semibold leading-6 text-gray-900">Batal</button>
+                    <button id="submit-button" type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Simpan Kinerja</button>
                 </div>
             </form>
         </div>
     </div>
-    
+
     <script src="admin.js"></script>
 </body>
 </html>
