@@ -61,7 +61,7 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detail Kinerja</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Deskripsi</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">File</th>
                             </tr>
@@ -88,35 +88,32 @@
                 <button id="close-form-modal" class="text-gray-400 hover:text-gray-600">&times;</button>
             </div>
             <form id="kinerja-form" class="space-y-6">
-                <!-- INPUT TERSEMBUNYI UNTUK ID KINERJA -->
                 <input type="hidden" id="id-kinerja-input" name="ID Kinerja">
-
                 <div>
                     <label for="tanggal" class="block text-sm font-medium text-gray-700">Tanggal</label>
-                    <input type="date" name="tanggal" id="tanggal" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <input type="date" name="Tanggal" id="tanggal" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                 </div>
                 <div>
-                    <label for="kinerja" class="block text-sm font-medium text-gray-700">Detail Kinerja</label>
-                    <textarea name="kinerja" id="kinerja" rows="4" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                    <label for="deskripsi" class="block text-sm font-medium text-gray-700">Deskripsi</label>
+                    <textarea name="Deskripsi" id="deskripsi" rows="4" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
                 </div>
                 <div>
                     <label for="file" class="block text-sm font-medium text-gray-700">Link File (Opsional)</label>
-                    <input type="url" name="file" id="file" placeholder="https://..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <input type="url" name="File" id="file" placeholder="https://..." class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                 </div>
-                 <input type="hidden" name="jenis" value="Kinerja">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                     <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 text-sm">
-                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="status" value="Hadir" class="mr-2" checked> Hadir</label>
-                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="status" value="Lembur" class="mr-2"> Lembur</label>
-                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="status" value="Cuti" class="mr-2"> Cuti</label>
-                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="status" value="Dinas" class="mr-2"> Dinas</label>
-                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="status" value="Sakit" class="mr-2"> Sakit</label>
-                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="status" value="ST" class="mr-2"> ST</label>
+                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="Status" value="Hadir" class="mr-2" checked> Hadir</label>
+                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="Status" value="Lembur" class="mr-2"> Lembur</label>
+                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="Status" value="Cuti" class="mr-2"> Cuti</label>
+                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="Status" value="Dinas" class="mr-2"> Dinas</label>
+                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="Status" value="Sakit" class="mr-2"> Sakit</label>
+                        <label class="flex items-center p-2 border rounded-md has-[:checked]:bg-indigo-50 has-[:checked]:border-indigo-400 cursor-pointer"><input type="radio" name="Status" value="ST" class="mr-2"> ST</label>
                     </div>
                 </div>
                 <div class="text-right">
-                    <button id="submit-button" type="type" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    <button id="submit-button" type="submit" class="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         Simpan Kinerja
                     </button>
                 </div>
