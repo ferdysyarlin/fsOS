@@ -9,7 +9,21 @@ let currentlyEditingId = null;
 let activeDetailId = null;
 const statusOptions = ['Hadir', 'Lembur', 'Cuti', 'Dinas', 'Sakit', 'ST'];
 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-
+const colorOptions = {
+    'default': 'border-transparent',
+    'blue': 'border-blue-400',
+    'green': 'border-green-400',
+    'yellow': 'border-yellow-400',
+    'red': 'border-red-400',
+    'purple': 'border-purple-400',
+};
+const colorClasses = {
+    'blue': 'bg-blue-400 ring-blue-500',
+    'green': 'bg-green-400 ring-green-500',
+    'yellow': 'bg-yellow-400 ring-yellow-500',
+    'red': 'bg-red-400 ring-red-500',
+    'purple': 'bg-purple-400 ring-purple-500',
+}
 
 // --- Elemen DOM ---
 const pinModalOverlay = document.getElementById('pin-modal-overlay');
@@ -41,14 +55,12 @@ const fileLamaP = document.getElementById('file-lama');
 const deleteModalOverlay = document.getElementById('delete-modal-overlay');
 const cancelDeleteButton = document.getElementById('cancel-delete-button');
 const confirmDeleteButton = document.getElementById('confirm-delete-button');
-// Filter Elements
 const searchInput = document.getElementById('search-input');
 const statusFilter = document.getElementById('status-filter');
 const monthFilter = document.getElementById('month-filter');
 const yearFilter = document.getElementById('year-filter');
 const resetFilterButton = document.getElementById('reset-filter-button');
 const reloadDataButton = document.getElementById('reload-data-button');
-// Mobile Filter Elements
 const mobileFilterButton = document.getElementById('mobile-filter-button');
 const mobileFilterModal = document.getElementById('mobile-filter-modal');
 const closeMobileFilterButton = document.getElementById('close-mobile-filter-button');
@@ -57,7 +69,8 @@ const searchInputMobile = document.getElementById('search-input-mobile');
 const statusFilterMobile = document.getElementById('status-filter-mobile');
 const monthFilterMobile = document.getElementById('month-filter-mobile');
 const yearFilterMobile = document.getElementById('year-filter-mobile');
-
+const colorContainer = document.getElementById('color-container');
+const warnaInput = document.getElementById('warna-input');
 
 // --- DEKLARASI FUNGSI ---
 
@@ -77,7 +90,6 @@ function handlePinSubmit(e) {
         setTimeout(() => pinModalContent.classList.remove('shake'), 500);
     }
 }
-
 function showDetailView(id) {
     const itemData = localData.find(item => item['ID Kinerja'] === id);
     if (!itemData) return;
@@ -91,7 +103,6 @@ function showDetailView(id) {
         listView.classList.add('hidden');
     }
 }
-
 function hideDetailView() {
     activeDetailId = null;
     detailView.classList.add('hidden');
@@ -102,7 +113,6 @@ function hideDetailView() {
     }
     highlightActiveItem(null);
 }
-
 function renderDetail(data) {
     let files = [];
     try {
@@ -145,8 +155,10 @@ function handleBodyClick(e) {
     
     if (!itemElement) return;
     const id = itemElement.getAttribute('data-id');
+
     if (target.closest('.edit-btn')) openEditForm(id);
     else if (target.closest('.delete-btn')) openDeleteModal(id);
+    else if (target.closest('.pin-btn')) togglePin(id);
     else if (target.closest('.data-cell')) showDetailView(id);
 }
 
@@ -190,8 +202,13 @@ function renderData(dataToRender) {
 
 function createTableRow(item) {
     const row = document.createElement('tr');
-    row.className = 'hover:bg-gray-50';
+    const borderColorClass = colorOptions[item.Warna] || colorOptions['default'];
+    row.className = `hover:bg-gray-50 border-l-4 ${borderColorClass}`;
     row.setAttribute('data-id', item['ID Kinerja']);
+    
+    const isPinned = item.Pin === true || item.Pin === 'TRUE';
+    const pinIcon = isPinned ? `<i data-lucide="pin" class="w-5 h-5 text-indigo-600 fill-indigo-200"></i>` : `<i data-lucide="pin" class="w-5 h-5"></i>`;
+
     row.innerHTML = `
         <td class="px-6 py-4 whitespace-nowrap data-cell cursor-pointer">
             ${getPreviewThumbnail(item.File)}
@@ -203,6 +220,7 @@ function createTableRow(item) {
         <td class="px-6 py-4 whitespace-nowrap data-cell cursor-pointer">${getStatusBadge(item.Status)}</td>
         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-right">
             <div class="flex items-center justify-end gap-1">
+                <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition pin-btn">${pinIcon}</button>
                 <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn"><i data-lucide="pencil" class="w-5 h-5"></i></button>
                 <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
             </div>
@@ -212,9 +230,14 @@ function createTableRow(item) {
 
 function createCardView(item) {
    const card = document.createElement('div');
-    card.className = 'bg-white rounded-xl shadow-md p-4 flex items-center justify-between gap-4';
-    card.setAttribute('data-id', item['ID Kinerja']);
-    card.innerHTML = `
+   const borderColorClass = colorOptions[item.Warna] || colorOptions['default'];
+   card.className = `bg-white rounded-xl shadow-md p-4 flex items-center justify-between gap-4 border-l-4 ${borderColorClass}`;
+   card.setAttribute('data-id', item['ID Kinerja']);
+
+   const isPinned = item.Pin === true || item.Pin === 'TRUE';
+   const pinIcon = isPinned ? `<i data-lucide="pin" class="w-5 h-5 text-indigo-600 fill-indigo-200"></i>` : `<i data-lucide="pin" class="w-5 h-5"></i>`;
+
+   card.innerHTML = `
         <div class="data-cell cursor-pointer flex-1 flex items-center gap-4">
             ${getPreviewThumbnail(item.File)}
             <div class="flex-1">
@@ -226,6 +249,7 @@ function createCardView(item) {
             </div>
         </div>
         <div class="flex flex-col gap-1">
+            <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition pin-btn">${pinIcon}</button>
             <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn"><i data-lucide="pencil" class="w-5 h-5"></i></button>
             <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
         </div>`;
@@ -241,6 +265,7 @@ function openCreateForm() {
     fileNameSpan.textContent = 'Pilih hingga 5 file (opsional)';
     fileLamaP.innerHTML = '';
     setActiveStatus('Hadir');
+    setActiveColor('default');
     formModalOverlay.classList.remove('hidden');
 }
 
@@ -260,6 +285,7 @@ function openEditForm(id) {
     fileLamaP.innerHTML = files.length > 0 ? `File saat ini: ${files.map(f => f.name).join(', ')}` : 'Tidak ada file terunggah.';
 
     setActiveStatus(item.Status || 'Hadir');
+    setActiveColor(item.Warna || 'default');
     formModalOverlay.classList.remove('hidden');
 }
 
@@ -274,7 +300,7 @@ async function handleFormSubmit(e) {
     data.action = currentlyEditingId ? 'update' : 'create';
     
     if (data.action === 'create') {
-        const optimisticData = { ...data, Tanggal: data.Tanggal.split('-').reverse().join('/'), File: '[]' };
+        const optimisticData = { ...data, Tanggal: data.Tanggal.split('-').reverse().join('/'), File: '[]', Pin: false, Warna: data.Warna };
         localData.unshift(optimisticData);
         applyAndRenderFilters();
     }
@@ -285,12 +311,13 @@ async function handleFormSubmit(e) {
         else throw new Error(response.message || 'Gagal menyimpan data.');
     } catch (error) {
         showError(error.message);
-        fetchData();
+        fetchData(); // Re-fetch to sync with server on error
     } finally {
         submitButton.disabled = false;
         submitButton.textContent = 'Simpan Kinerja';
     }
 }
+
 
 function openDeleteModal(id) {
     confirmDeleteButton.setAttribute('data-id', id);
@@ -323,8 +350,11 @@ async function sendDataToServer(data) {
 
 function updateLocalData(savedData) {
     const index = localData.findIndex(item => item['ID Kinerja'] === savedData['ID Kinerja']);
-    if (index !== -1) localData[index] = savedData;
-    else localData.unshift(savedData);
+    if (index !== -1) {
+        localData[index] = savedData;
+    } else {
+        localData.unshift(savedData);
+    }
     applyAndRenderFilters();
 }
 
@@ -389,7 +419,7 @@ function getStatusBadge(status) {
 
 function getPreviewThumbnail(fileJson) {
     let files = [];
-    try { if (fileJson) files = JSON.parse(fileJson); } catch(e) {}
+    try { if (fileJson) files = JSON.parse(fileJson); } catch (e) {}
     const firstImage = files.find(f => f.type.startsWith('image/'));
     if (firstImage) {
         const thumbnailUrl = createThumbnailUrl(firstImage.url);
@@ -479,7 +509,8 @@ function applyAndRenderFilters() {
     const status = statusFilter.value;
     const month = monthFilter.value;
     const year = yearFilter.value;
-    const filteredData = localData.filter(item => {
+    
+    let filteredData = localData.filter(item => {
         const [, itemMonth, itemYear] = item.Tanggal.split('/');
         const searchMatch = !searchTerm || (item.Deskripsi && item.Deskripsi.toLowerCase().includes(searchTerm));
         const statusMatch = !status || item.Status === status;
@@ -487,8 +518,16 @@ function applyAndRenderFilters() {
         const yearMatch = !year || itemYear === year;
         return searchMatch && statusMatch && monthMatch && yearMatch;
     });
+
+    filteredData.sort((a, b) => {
+        const pinA = a.Pin === true || a.Pin === 'TRUE' ? 1 : 0;
+        const pinB = b.Pin === true || b.Pin === 'TRUE' ? 1 : 0;
+        return pinB - pinA;
+    });
+
     renderData(filteredData);
 }
+
 
 function resetFilters() {
     searchInput.value = '';
@@ -511,10 +550,62 @@ function syncDesktopFilters() {
     yearFilterMobile.value = yearFilter.value;
 }
 
+function renderColorButtons() {
+    colorContainer.innerHTML = '';
+    const noColorBtn = document.createElement('button');
+    noColorBtn.type = 'button';
+    noColorBtn.className = 'color-swatch w-8 h-8 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center';
+    noColorBtn.dataset.color = 'default';
+    noColorBtn.innerHTML = `<i data-lucide="slash" class="w-5 h-5 text-gray-500"></i>`;
+    noColorBtn.onclick = () => setActiveColor('default');
+    colorContainer.appendChild(noColorBtn);
+
+    Object.keys(colorClasses).forEach(color => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `color-swatch w-8 h-8 rounded-full ${colorClasses[color]}`;
+        button.dataset.color = color;
+        button.onclick = () => setActiveColor(color);
+        colorContainer.appendChild(button);
+    });
+}
+
+function setActiveColor(activeColor) {
+    warnaInput.value = activeColor === 'default' ? '' : activeColor;
+    colorContainer.querySelectorAll('.color-swatch').forEach(btn => {
+        const btnColor = btn.dataset.color;
+        const ringColorClass = colorClasses[btnColor] ? colorClasses[btnColor].split(' ')[1] : 'ring-gray-400';
+        btn.classList.toggle('selected', btnColor === activeColor);
+        btn.style.setProperty('--tw-ring-color', `var(--tw-color-${ringColor.split('-')[0]}-${ringColor.split('-')[1]})`);
+    });
+}
+
+async function togglePin(id) {
+    const item = localData.find(d => d['ID Kinerja'] === id);
+    if (!item) return;
+
+    const currentPinStatus = item.Pin === true || item.Pin === 'TRUE';
+    item.Pin = !currentPinStatus;
+
+    applyAndRenderFilters();
+
+    const dataToUpdate = { ...item, Pin: item.Pin, action: 'update', files: [] };
+    
+    try {
+        await sendDataToServer(dataToUpdate);
+    } catch (error) {
+        showError(`Gagal menyimpan status pin: ${error.message}`);
+        item.Pin = currentPinStatus; 
+        applyAndRenderFilters();
+    }
+}
+
+
 // --- EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
     renderStatusButtons();
+    renderColorButtons();
     pinForm.addEventListener('submit', handlePinSubmit);
     addDataButton.addEventListener('click', openCreateForm);
     document.body.addEventListener('click', handleBodyClick);
@@ -528,7 +619,6 @@ document.addEventListener('DOMContentLoaded', () => {
     [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
     searchInputMobile.addEventListener('input', applyAndRenderFilters);
     
-    // Mobile Filter Listeners
     mobileFilterButton.addEventListener('click', () => {
         syncDesktopFilters();
         mobileFilterModal.classList.remove('hidden');
@@ -539,6 +629,5 @@ document.addEventListener('DOMContentLoaded', () => {
         applyAndRenderFilters();
         mobileFilterModal.classList.add('hidden');
     });
-
 });
 
