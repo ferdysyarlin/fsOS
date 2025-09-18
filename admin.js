@@ -12,6 +12,8 @@ let activeView = 'kinerja'; // 'kinerja' atau 'skp'
 let isDataLoading = { kinerja: false, skp: false };
 const statusOptions = ['Hadir', 'Lembur', 'Cuti', 'Dinas', 'Sakit', 'ST'];
 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+let currentPage = 1;
+const ITEMS_PER_PAGE = 100;
 
 // Palet Warna Pastel
 const colorOptions = {
@@ -53,6 +55,7 @@ const cardContainer = document.getElementById('kinerja-card-container');
 const skpView = document.getElementById('skp-view');
 const skpTableBody = document.getElementById('skp-table-body');
 const filterBar = document.getElementById('filter-bar');
+const paginationContainer = document.getElementById('pagination-container');
 
 
 // Elemen Form & Modal
@@ -154,7 +157,11 @@ async function fetchData(view, isBackground = false) {
         if (data.error) throw new Error(data.error);
 
         if (view === 'kinerja') {
-            localData = data;
+            localData = data.sort((a, b) => {
+                const dateA = new Date(a.Tanggal.split('/').reverse().join('-'));
+                const dateB = new Date(b.Tanggal.split('/').reverse().join('-'));
+                return dateB - dateA;
+            });
             if (!isBackground && activeView === 'kinerja') {
                 populateFilters();
                 applyAndRenderFilters();
@@ -254,21 +261,69 @@ function highlightActiveItem(id) {
 // --- FUNGSI RENDER TAMPILAN KINERJA ---
 
 function renderData(dataToRender) {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const paginatedData = dataToRender.slice(startIndex, endIndex);
+
     tableBody.innerHTML = '';
     cardContainer.innerHTML = '';
-    if (dataToRender.length === 0) {
+    if (paginatedData.length === 0) {
         const emptyMessage = '<p class="col-span-full text-center py-10 text-gray-500">Tidak ada data yang cocok.</p>';
         tableBody.innerHTML = `<tr><td colspan="5">${emptyMessage}</td></tr>`;
         cardContainer.innerHTML = emptyMessage;
+        renderPagination(0);
         return;
     }
-    dataToRender.forEach(item => {
+    paginatedData.forEach(item => {
         createTableRow(item);
         createCardView(item);
     });
     if (activeDetailId) highlightActiveItem(activeDetailId);
     lucide.createIcons();
+    renderPagination(dataToRender.length);
 }
+
+function renderPagination(totalItems) {
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+    paginationContainer.innerHTML = '';
+
+    if (totalPages <= 1) return;
+
+    let paginationHTML = `<nav class="flex items-center justify-between border-t border-gray-200 px-4 sm:px-0">`;
+    paginationHTML += `<div class="-mt-px flex w-0 flex-1">`;
+    if (currentPage > 1) {
+        paginationHTML += `<a href="#" data-page="${currentPage - 1}" class="inline-flex items-center border-t-2 border-transparent pr-1 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+        <i data-lucide="arrow-left" class="mr-3 h-5 w-5 text-gray-400"></i>
+        Sebelumnya
+      </a>`;
+    }
+    paginationHTML += `</div>`;
+    paginationHTML += `<div class="hidden md:-mt-px md:flex">`;
+    for (let i = 1; i <= totalPages; i++) {
+        paginationHTML += `<a href="#" data-page="${i}" class="${currentPage === i ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} inline-flex items-center border-t-2 px-4 pt-4 text-sm font-medium">${i}</a>`;
+    }
+    paginationHTML += `</div>`;
+    paginationHTML += `<div class="-mt-px flex w-0 flex-1 justify-end">`;
+    if (currentPage < totalPages) {
+        paginationHTML += `<a href="#" data-page="${currentPage + 1}" class="inline-flex items-center border-t-2 border-transparent pl-1 pt-4 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700">
+        Selanjutnya
+        <i data-lucide="arrow-right" class="ml-3 h-5 w-5 text-gray-400"></i>
+      </a>`;
+    }
+    paginationHTML += `</div></nav>`;
+
+    paginationContainer.innerHTML = paginationHTML;
+    lucide.createIcons();
+
+    paginationContainer.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentPage = parseInt(e.currentTarget.dataset.page);
+            applyAndRenderFilters();
+        });
+    });
+}
+
 
 function createTableRow(item) {
     const row = document.createElement('tr');
@@ -825,5 +880,18 @@ document.addEventListener('DOMContentLoaded', () => {
     mobileFilterButton.addEventListener('click', () => { syncDesktopFilters(); mobileFilterModal.classList.remove('hidden'); });
     closeMobileFilterButton.addEventListener('click', () => mobileFilterModal.classList.add('hidden'));
     applyMobileFilterButton.addEventListener('click', () => { syncMobileFilters(); applyAndRenderFilters(); mobileFilterModal.classList.add('hidden'); });
+    
+    // Daftarkan Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('Service Worker berhasil didaftarkan:', registration);
+                })
+                .catch(registrationError => {
+                    console.log('Pendaftaran Service Worker gagal:', registrationError);
+                });
+        });
+    }
 });
 
