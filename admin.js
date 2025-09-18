@@ -1,5 +1,5 @@
 // --- PENTING: Ganti dengan URL dan PIN Anda ---
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwbtx7WYlcVyGX8AEkCiyLjk2iBoA_HIfVHFyi-ljYbIwPBJT2a3HhomIoLIynoOOfVMw/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzLKJ3844QnYp2VFHnxZqOIgXiJQnOsdODkNWIR62yAV6TAwm293umXAzQBgZEv0rEY/exec';
 const CORRECT_PIN = '3390'; // Ganti dengan PIN 4 digit rahasia Anda
 
 // --- Variabel Global ---
@@ -48,8 +48,6 @@ const navSkp = document.getElementById('nav-skp');
 const kinerjaView = document.getElementById('kinerja-view');
 const tableBody = document.getElementById('kinerja-table-body');
 const cardContainer = document.getElementById('kinerja-card-container');
-const kinerjaFiltersDesktop = document.getElementById('kinerja-filters-desktop');
-const kinerjaFiltersMobile = document.getElementById('kinerja-filters-mobile');
 
 // Elemen View SKP
 const skpView = document.getElementById('skp-view');
@@ -111,25 +109,22 @@ function switchView(viewName) {
     activeView = viewName;
     hideDetailView(); // Selalu tutup detail view saat berganti halaman
 
-    // Sembunyikan semua view utama
-    kinerjaView.classList.add('hidden');
-    skpView.classList.add('hidden');
-
-    // Atur visibilitas filter dan Tombol Tambah
     const isKinerjaView = viewName === 'kinerja';
-    kinerjaFiltersDesktop.style.display = isKinerjaView ? 'flex' : 'none';
-    kinerjaFiltersMobile.style.display = isKinerjaView ? 'flex' : 'none';
+
+    // Atur visibilitas view utama
+    kinerjaView.classList.toggle('hidden', !isKinerjaView);
+    skpView.classList.toggle('hidden', isKinerjaView);
+
+    // Atur Tombol Tambah
     addDataButton.classList.toggle('hidden', !isKinerjaView);
 
     // Tampilkan view yang dipilih dan update UI
     if (viewName === 'kinerja') {
-        kinerjaView.classList.remove('hidden');
         pageTitle.textContent = 'Kinerja';
         navKinerja.classList.add('active');
         navSkp.classList.remove('active');
         fetchData();
     } else if (viewName === 'skp') {
-        skpView.classList.remove('hidden');
         pageTitle.textContent = 'SKP';
         navSkp.classList.add('active');
         navKinerja.classList.remove('active');
@@ -168,9 +163,9 @@ async function fetchData() {
 function showDetailView(id) {
     let itemData;
     if (activeView === 'kinerja') {
-        itemData = localData.find(item => item['ID Kinerja'] === id);
+        itemData = localData.find(item => item && item['ID Kinerja'] === id);
     } else if (activeView === 'skp') {
-        itemData = skpData.find(item => item['Tahun'] + item['Atasan'] === id);
+        itemData = skpData.find(item => item && (item['Tahun'] + item['Atasan']) === id);
     }
     if (!itemData) return;
 
@@ -625,6 +620,7 @@ function showError(message) {
     hideLoading();
     errorDiv.classList.remove('hidden');
     errorMessageP.textContent = message;
+    // Tampilkan view yang seharusnya aktif saat terjadi error
     if (activeView === 'kinerja') {
         kinerjaView.classList.remove('hidden');
     } else {
@@ -659,34 +655,21 @@ function applyAndRenderFilters() {
     const year = yearFilter.value;
     
     let filteredData = localData.filter(item => {
-        // Pengecekan dasar untuk memastikan item valid
         if (!item) return false;
 
         const searchMatch = !searchTerm || (item.Deskripsi && item.Deskripsi.toLowerCase().includes(searchTerm));
         const statusMatch = !status || item.Status === status;
-
-        // Jika tidak cocok dengan filter non-tanggal, langsung kecualikan
-        if (!searchMatch || !statusMatch) {
-            return false;
-        }
-
-        // Pengecekan tanggal yang aman
+        if (!searchMatch || !statusMatch) return false;
+        
         const hasDate = typeof item.Tanggal === 'string' && item.Tanggal.includes('/');
+        if (!month && !year) return true;
 
-        // Jika filter tanggal tidak aktif, maka item lolos
-        if (!month && !year) {
-            return true;
-        }
-
-        // Jika filter tanggal aktif, item harus punya tanggal yang valid
         if (hasDate) {
             const [, itemMonth, itemYear] = item.Tanggal.split('/');
             const monthMatch = !month || itemMonth === month;
             const yearMatch = !year || itemYear === year;
             return monthMatch && yearMatch;
         }
-
-        // Jika filter tanggal aktif tapi item tidak punya tanggal, kecualikan
         return false;
     });
 
@@ -694,7 +677,7 @@ function applyAndRenderFilters() {
         const pinA = a.Pin === true || a.Pin === 'TRUE' ? 1 : 0;
         const pinB = b.Pin === true || b.Pin === 'TRUE' ? 1 : 0;
         if (pinB !== pinA) return pinB - pinA;
-        return 0; // Maintain original sort order for items with same pin status
+        return 0;
     });
 
     renderData(filteredData);
@@ -745,52 +728,35 @@ function setActiveColor(activeColor) {
     warnaInput.value = activeColor === 'default' ? '' : activeColor;
     
     const ringColorValues = {
-        blue: '#93c5fd',   // Tailwind blue-300
-        green: '#86efac',  // Tailwind green-300
-        yellow: '#fde047', // Tailwind yellow-300
-        red: '#fca5a5',    // Tailwind red-300
-        purple: '#c4b5fd', // Tailwind purple-300
-        default: '#9ca3af' // Tailwind gray-400
+        blue: '#93c5fd', green: '#86efac', yellow: '#fde047', red: '#fca5a5', purple: '#c4b5fd', default: '#9ca3af'
     };
 
     colorContainer.querySelectorAll('.color-swatch').forEach(btn => {
         const btnColor = btn.dataset.color;
         const isSelected = btnColor === activeColor;
         btn.classList.toggle('selected', isSelected);
-
-        if (isSelected) {
-            btn.style.setProperty('--ring-color', ringColorValues[btnColor]);
-        }
+        if (isSelected) btn.style.setProperty('--ring-color', ringColorValues[btnColor]);
     });
 }
 
 async function togglePin(id) {
-    const itemIndex = localData.findIndex(d => d['ID Kinerja'] === id);
+    const itemIndex = localData.findIndex(d => d && d['ID Kinerja'] === id);
     if (itemIndex === -1) return;
 
     const item = localData[itemIndex];
     const newPinStatus = !(item.Pin === true || item.Pin === 'TRUE');
-
-    // Buat objek data untuk server dengan status pin yang baru
     const dataToUpdate = { ...item, Pin: newPinStatus, action: 'update', files: [] };
     
-    // Nonaktifkan tombol untuk mencegah klik ganda dan beri feedback
     const pinButton = document.querySelector(`[data-id="${id}"] .pin-btn`);
     if (pinButton) pinButton.disabled = true;
 
     try {
-        // Tunggu server mengonfirmasi perubahan
         await sendDataToServer(dataToUpdate);
-
-        // Jika berhasil, update data lokal dan render ulang seluruh daftar
         localData[itemIndex].Pin = newPinStatus;
         applyAndRenderFilters();
-
     } catch (error) {
-        // Jika server gagal, tampilkan error. UI tidak pernah berubah.
         showError(`Gagal menyimpan status pin: ${error.message}`);
     } finally {
-        // Selalu aktifkan kembali tombolnya
         if (pinButton) pinButton.disabled = false;
     }
 }
@@ -819,6 +785,7 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', handleFormSubmit);
     fileInput.addEventListener('change', handleFileSelect);
     resetFilterButton.addEventListener('click', resetFilters);
+    resetFilterButtonMobile.addEventListener('click', resetFilters);
     reloadDataButton.addEventListener('click', fetchData);
     [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
     searchInputMobile.addEventListener('input', applyAndRenderFilters);
