@@ -1,6 +1,6 @@
 import { init as initKinerja, fetchData as fetchKinerjaData } from './kinerja.js';
 import { init as initSkp, fetchData as fetchSkpData } from './skp.js';
-import { init as initDashboard, fetchData as fetchDashboardData } from './dashboard.js';
+import { init as initDashboard } from './dashboard.js';
 
 // --- Konfigurasi ---
 const CORRECT_PIN = '1234';
@@ -51,15 +51,9 @@ async function showView(pageName) {
     closeSidebar();
     updateActiveLink();
     
-    // Tampilkan/sembunyikan tombol tambah berdasarkan halaman
     if (addDataButton) {
-        if (pageName === 'kinerja') {
-            addDataButton.classList.remove('hidden');
-        } else {
-            addDataButton.classList.add('hidden');
-        }
+        addDataButton.classList.toggle('hidden', pageName !== 'kinerja');
     }
-
 
     try {
         const response = await fetch(`${pageName}.html`);
@@ -96,7 +90,6 @@ function updateActiveLink() {
         link.classList.toggle('active', link.dataset.page === currentPage);
     });
 }
-
 
 // --- Verifikasi PIN ---
 async function handlePinSubmit(e) {
@@ -137,13 +130,11 @@ async function handlePinSubmit(e) {
 
 // --- Fungsi Reload Data ---
 async function reloadCurrentPageData() {
-    console.log(`Memuat ulang data untuk halaman: ${currentPage}`);
     try {
-        if (currentPage === 'dashboard') {
-            await preloadAllData();
-        } else if (currentPage === 'kinerja') {
+        if (currentPage === 'dashboard' || currentPage === 'kinerja') {
             appDataCache.kinerja = await fetchKinerjaData();
-        } else if (currentPage === 'skp') {
+        }
+        if (currentPage === 'dashboard' || currentPage === 'skp') {
             appDataCache.skp = await fetchSkpData();
         }
         showView(currentPage);
@@ -156,7 +147,6 @@ async function reloadCurrentPageData() {
 // --- Inisialisasi & Event Listeners ---
 document.addEventListener('DOMContentLoaded', () => {
     
-    // Setup PIN form
     pinModalOverlay.innerHTML = `
          <div id="pin-modal-content" class="text-center p-5 transition-transform duration-300">
               <div class="flex items-center gap-2 justify-center">
@@ -170,7 +160,6 @@ document.addEventListener('DOMContentLoaded', () => {
          </div>`;
     document.getElementById('pin-form').addEventListener('submit', handlePinSubmit);
     
-    // Global Listeners
     hamburgerButton.addEventListener('click', openSidebar);
     sidebarOverlay.addEventListener('click', closeSidebar);
     reloadDataButton.addEventListener('click', reloadCurrentPageData);
@@ -184,14 +173,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     lucide.createIcons();
 
-     // Registrasi Service Worker untuk PWA
      if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').then(registration => {
-                console.log('ServiceWorker: Registrasi berhasil dengan cakupan: ', registration.scope);
-            }, err => {
-                console.log('ServiceWorker: Registrasi gagal: ', err);
-            });
+            navigator.serviceWorker.register('/sw.js');
         });
     }
 });
