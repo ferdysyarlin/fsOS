@@ -1,5 +1,6 @@
-const CACHE_NAME = 'fsOS-cache-v2'; // Versi cache dinaikkan untuk memicu pembaruan
-// Daftar file inti yang akan disimpan di cache untuk mode offline
+const CACHE_NAME = 'fsOS-shell-cache-v1';
+const DATA_CACHE_NAME = 'fsOS-data-cache-v1';
+
 const urlsToCache = [
   '/',
   '/index.html',
@@ -10,21 +11,19 @@ const urlsToCache = [
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
 ];
 
-// Event 'install': Menyimpan file ke cache saat service worker pertama kali diinstal
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Opened cache and caching essential assets for offline use');
+        console.log('Opened shell cache and caching essential assets');
         return cache.addAll(urlsToCache);
       })
   );
   self.skipWaiting();
 });
 
-// Event 'activate': Membersihkan cache lama jika ada versi baru
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
+  const cacheWhitelist = [CACHE_NAME, DATA_CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -40,39 +39,49 @@ self.addEventListener('activate', event => {
   return self.clients.claim();
 });
 
-// Event 'fetch': Mengambil file dari cache jika tersedia (Cache-First Strategy)
 self.addEventListener('fetch', event => {
-  // Abaikan permintaan ke Google Apps Script agar data selalu terbaru
-  if (event.request.url.includes('script.google.com')) {
-    return;
+  const requestUrl = new URL(event.request.url);
+
+  // Network-first, falling back to cache for API calls to Google Apps Script
+  if (requestUrl.origin === 'https://script.google.com') {
+    event.respondWith(
+      caches.open(DATA_CACHE_NAME).then(cache => {
+        return fetch(event.request)
+          .then(networkResponse => {
+            // If we get a valid response, update the cache and return the response
+            if (networkResponse.ok) {
+              cache.put(event.request, networkResponse.clone());
+            }
+            return networkResponse;
+          })
+          .catch(() => {
+            // If the network request fails (e.g., offline), try to get it from the cache
+            return cache.match(event.request);
+          });
+      })
+    );
+    return; // Stop further execution for API calls
   }
 
+  // Cache-first for all other assets (the app shell)
   event.respondWith(
     caches.match(event.request)
-      .then(response => {
-        // Jika file ada di cache, kembalikan dari cache
-        if (response) {
-          return response;
+      .then(cachedResponse => {
+        // If we have a cached response, return it
+        if (cachedResponse) {
+          return cachedResponse;
         }
-        // Jika tidak ada, ambil dari jaringan, simpan ke cache, lalu kembalikan
-        return fetch(event.request).then(
-          networkResponse => {
-            if (!networkResponse || networkResponse.status !== 200) {
-              return networkResponse;
+        // Otherwise, fetch from the network
+        return fetch(event.request).then(networkResponse => {
+          // Cache the new response for next time
+          return caches.open(CACHE_NAME).then(cache => {
+            // Make sure the response is valid before caching
+            if (networkResponse.ok) {
+                 cache.put(event.request, networkResponse.clone());
             }
-            // Hanya cache permintaan GET yang valid
-            if(event.request.method !== 'GET') {
-                return networkResponse;
-            }
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
             return networkResponse;
-          }
-        );
+          });
+        });
       })
   );
 });
-
