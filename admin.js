@@ -1,6 +1,6 @@
 // --- PENTING: Ganti dengan URL dan PIN Anda ---
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzU9-HXyIc4_aXXF8p17ckDMtG7zQYeCU2RnMk94cKpZVFv46oCUw1Md8zLuUgIwFSj2Q/exec';
-const CORRECT_PIN = 'fs33123'; // Ganti dengan PIN 4 digit rahasia Anda
+const CORRECT_PIN = '3390'; // Ganti dengan PIN 4 digit rahasia Anda
 
 // --- Variabel Global ---
 let localData = [];
