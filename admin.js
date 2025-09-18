@@ -4,7 +4,7 @@ import { init as initDashboard } from './dashboard.js';
 
 // --- Konfigurasi ---
 const CORRECT_PIN = '1234';
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwIuNqfyRRnR8IaPIL7oVyfWwp9Vh1M6GStsAj-HKgCQ3C3BFDVLJMsuGXdRbaieNJcRQ/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzqEzgJMyHH3FL9T0UrzRg9az6LSlrI3jU-5FVA4oNRGxF_i1Iu60gQ5S21PABUs443KA/exec';
 
 // --- Cache Data Global ---
 const appDataCache = {
