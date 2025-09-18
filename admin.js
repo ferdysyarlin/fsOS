@@ -24,73 +24,9 @@ const colorClasses = {
     'blue': 'bg-blue-300', 'green': 'bg-green-300', 'yellow': 'bg-yellow-300', 'red': 'bg-red-300', 'purple': 'bg-purple-300',
 };
 
-// --- Elemen DOM ---
-const body = document.body;
-const pinModalOverlay = document.getElementById('pin-modal-overlay');
-const pinForm = document.getElementById('pin-form');
-const pinInput = document.getElementById('pin-input');
-const pinError = document.getElementById('pin-error');
-const mainContainer = document.getElementById('main-container');
-const addDataButton = document.getElementById('add-data-button');
-const loadingDiv = document.getElementById('loading');
-const errorDiv = document.getElementById('error');
-const errorMessageP = document.getElementById('error-message');
-const listView = document.getElementById('list-view');
-const detailView = document.getElementById('detail-view');
-const detailContent = document.getElementById('detail-content');
-const pageTitle = document.getElementById('page-title');
+// --- Elemen DOM (Deklarasi Awal) ---
+let body, pinModalOverlay, pinForm, pinInput, pinError, mainContainer, addDataButton, loadingDiv, errorDiv, errorMessageP, listView, detailView, detailContent, pageTitle, sidebar, sidebarOverlay, hamburgerButton, closeSidebarButton, navKinerja, navSkp, kinerjaView, tableBody, cardContainer, skpView, skpTableBody, filterBar, paginationContainer, formModalOverlay, closeFormModalButton, form, submitButton, idKinerjaInput, tanggalInput, deskripsiInput, statusContainer, statusInput, fileInput, fileNameSpan, fileLamaP, deleteModalOverlay, cancelDeleteButton, confirmDeleteButton, searchInput, statusFilter, monthFilter, yearFilter, resetFilterButton, reloadDataButton, mobileFilterButton, mobileFilterModal, closeMobileFilterButton, applyMobileFilterButton, searchInputMobile, statusFilterMobile, monthFilterMobile, yearFilterMobile, colorContainer, warnaInput, resetFilterButtonMobile;
 
-// Elemen Navigasi & Sidebar
-const sidebar = document.getElementById('sidebar');
-const sidebarOverlay = document.getElementById('sidebar-overlay');
-const hamburgerButton = document.getElementById('hamburger-button');
-const closeSidebarButton = document.getElementById('close-sidebar-button');
-const navKinerja = document.getElementById('nav-kinerja');
-const navSkp = document.getElementById('nav-skp');
-
-// Elemen View
-const kinerjaView = document.getElementById('kinerja-view');
-const tableBody = document.getElementById('kinerja-table-body');
-const cardContainer = document.getElementById('kinerja-card-container');
-const skpView = document.getElementById('skp-view');
-const skpTableBody = document.getElementById('skp-table-body');
-const filterBar = document.getElementById('filter-bar');
-const paginationContainer = document.getElementById('pagination-container');
-
-
-// Elemen Form & Modal
-const formModalOverlay = document.getElementById('form-modal-overlay');
-const closeFormModalButton = document.getElementById('close-form-modal');
-const form = document.getElementById('kinerja-form');
-const submitButton = document.getElementById('submit-button');
-const idKinerjaInput = document.getElementById('id-kinerja');
-const tanggalInput = document.getElementById('tanggal');
-const deskripsiInput = document.getElementById('deskripsi');
-const statusContainer = document.getElementById('status-container');
-const statusInput = document.getElementById('status-input');
-const fileInput = document.getElementById('file-input');
-const fileNameSpan = document.getElementById('file-name');
-const fileLamaP = document.getElementById('file-lama');
-const deleteModalOverlay = document.getElementById('delete-modal-overlay');
-const cancelDeleteButton = document.getElementById('cancel-delete-button');
-const confirmDeleteButton = document.getElementById('confirm-delete-button');
-const searchInput = document.getElementById('search-input');
-const statusFilter = document.getElementById('status-filter');
-const monthFilter = document.getElementById('month-filter');
-const yearFilter = document.getElementById('year-filter');
-const resetFilterButton = document.getElementById('reset-filter-button');
-const reloadDataButton = document.getElementById('reload-data-button');
-const mobileFilterButton = document.getElementById('mobile-filter-button');
-const mobileFilterModal = document.getElementById('mobile-filter-modal');
-const closeMobileFilterButton = document.getElementById('close-mobile-filter-button');
-const applyMobileFilterButton = document.getElementById('apply-mobile-filter-button');
-const searchInputMobile = document.getElementById('search-input-mobile');
-const statusFilterMobile = document.getElementById('status-filter-mobile');
-const monthFilterMobile = document.getElementById('month-filter-mobile');
-const yearFilterMobile = document.getElementById('year-filter-mobile');
-const colorContainer = document.getElementById('color-container');
-const warnaInput = document.getElementById('warna-input');
-const resetFilterButtonMobile = document.getElementById('reset-filter-button-mobile');
 
 // --- FUNGSI UTAMA & MANAJEMEN APLIKASI ---
 
@@ -119,6 +55,7 @@ function switchView(viewName) {
     if (activeView === viewName) return;
     activeView = viewName;
     hideDetailView();
+    currentPage = 1; // Reset pagination when switching views
 
     const isKinerjaView = viewName === 'kinerja';
 
@@ -133,6 +70,7 @@ function switchView(viewName) {
 
     if (isKinerjaView) {
         if (localData.length > 0) applyAndRenderFilters();
+        else if (isDataLoading.kinerja) showLoading();
     } else {
         if (skpData.length > 0) renderSkpData(skpData);
         else if (isDataLoading.skp) {
@@ -157,13 +95,15 @@ async function fetchData(view, isBackground = false) {
         if (data.error) throw new Error(data.error);
 
         if (view === 'kinerja') {
-            localData = data.sort((a, b) => {
-                const dateA = new Date(a.Tanggal.split('/').reverse().join('-'));
-                const dateB = new Date(b.Tanggal.split('/').reverse().join('-'));
+             localData = data.sort((a, b) => {
+                // Handle cases where Tanggal might be missing or invalid
+                const dateA = a.Tanggal ? new Date(a.Tanggal.split('/').reverse().join('-')) : new Date(0);
+                const dateB = b.Tanggal ? new Date(b.Tanggal.split('/').reverse().join('-')) : new Date(0);
                 return dateB - dateA;
             });
             if (!isBackground && activeView === 'kinerja') {
                 populateFilters();
+                currentPage = 1;
                 applyAndRenderFilters();
             }
         } else if (view === 'skp') {
@@ -267,23 +207,24 @@ function renderData(dataToRender) {
 
     tableBody.innerHTML = '';
     cardContainer.innerHTML = '';
-    if (paginatedData.length === 0) {
+    if (paginatedData.length === 0 && currentPage === 1) {
         const emptyMessage = '<p class="col-span-full text-center py-10 text-gray-500">Tidak ada data yang cocok.</p>';
         tableBody.innerHTML = `<tr><td colspan="5">${emptyMessage}</td></tr>`;
         cardContainer.innerHTML = emptyMessage;
-        renderPagination(0);
-        return;
+    } else {
+        paginatedData.forEach(item => {
+            createTableRow(item);
+            createCardView(item);
+        });
     }
-    paginatedData.forEach(item => {
-        createTableRow(item);
-        createCardView(item);
-    });
+
     if (activeDetailId) highlightActiveItem(activeDetailId);
     lucide.createIcons();
     renderPagination(dataToRender.length);
 }
 
 function renderPagination(totalItems) {
+    if (!paginationContainer) return; // Guard clause to prevent error
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
     paginationContainer.innerHTML = '';
 
@@ -299,9 +240,24 @@ function renderPagination(totalItems) {
     }
     paginationHTML += `</div>`;
     paginationHTML += `<div class="hidden md:-mt-px md:flex">`;
-    for (let i = 1; i <= totalPages; i++) {
+    // Logic for showing limited page numbers
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, currentPage + 2);
+
+    if (startPage > 1) {
+        paginationHTML += `<a href="#" data-page="1" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 inline-flex items-center border-t-2 px-4 pt-4 text-sm font-medium">1</a>`;
+        if (startPage > 2) paginationHTML += `<span class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500">...</span>`;
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
         paginationHTML += `<a href="#" data-page="${i}" class="${currentPage === i ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} inline-flex items-center border-t-2 px-4 pt-4 text-sm font-medium">${i}</a>`;
     }
+
+     if (endPage < totalPages) {
+        if (endPage < totalPages -1) paginationHTML += `<span class="inline-flex items-center border-t-2 border-transparent px-4 pt-4 text-sm font-medium text-gray-500">...</span>`;
+        paginationHTML += `<a href="#" data-page="${totalPages}" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 inline-flex items-center border-t-2 px-4 pt-4 text-sm font-medium">${totalPages}</a>`;
+    }
+
     paginationHTML += `</div>`;
     paginationHTML += `<div class="-mt-px flex w-0 flex-1 justify-end">`;
     if (currentPage < totalPages) {
@@ -506,19 +462,17 @@ async function handleFormSubmit(e) {
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     
-    // Optimistic UI Update for Edit/Create
     const optimisticData = { 
         ...data,
         Tanggal: data.Tanggal.split('-').reverse().join('/'),
-        File: '[]', // Placeholder, will be updated from server
+        File: '[]', 
         Pin: false 
     };
 
     if (currentlyEditingId) {
-        // For Edit: find existing data to merge
         const existingItem = localData.find(item => item['ID Kinerja'] === currentlyEditingId);
         if (existingItem) {
-            optimisticData.File = existingItem.File; // Keep old files until server confirms
+            optimisticData.File = existingItem.File;
             optimisticData.Pin = existingItem.Pin;
         }
     }
@@ -526,21 +480,19 @@ async function handleFormSubmit(e) {
     updateLocalData(optimisticData);
     closeFormModal();
     
-    // Add file data for server submission
     data.files = fileData; 
     data.action = currentlyEditingId ? 'update' : 'create';
 
     try {
         const response = await sendDataToServer(data);
         if (response.status === 'success') {
-            // Sync with server authoritative response
             updateLocalData(response.savedData);
         } else {
             throw new Error(response.message || 'Gagal menyimpan data.');
         }
     } catch (error) {
         showError(error.message);
-        fetchData('kinerja'); // Re-fetch all data on error to ensure consistency
+        fetchData('kinerja');
     } finally {
         submitButton.disabled = false;
         submitButton.textContent = 'Simpan Kinerja';
@@ -559,22 +511,17 @@ function executeDelete() {
 
     const itemIndex = localData.findIndex(item => item['ID Kinerja'] === id);
     if (itemIndex === -1) return;
-
-    // 1. Back up the item in case of failure
     const deletedItem = localData[itemIndex];
 
-    // 2. Optimistically remove from local data and update UI
     localData.splice(itemIndex, 1);
     applyAndRenderFilters();
     deleteModalOverlay.classList.add('hidden');
     if (activeDetailId === id) hideDetailView();
 
-    // 3. Send request to server in the background
     sendDataToServer({ 'ID Kinerja': id, action: 'delete' })
         .catch(error => {
-            // 4. If it fails, revert the change and show an error
             showError(`Gagal menghapus data: ${error.message}. Mengembalikan data.`);
-            localData.splice(itemIndex, 0, deletedItem); // Re-insert at original position
+            localData.splice(itemIndex, 0, deletedItem);
             applyAndRenderFilters();
         });
 }
@@ -776,14 +723,19 @@ function applyAndRenderFilters() {
         const pinA = a.Pin === true || a.Pin === 'TRUE' ? 1 : 0;
         const pinB = b.Pin === true || b.Pin === 'TRUE' ? 1 : 0;
         if (pinB !== pinA) return pinB - pinA;
-        return 0;
+        // Secondary sort by date if pin status is the same
+        const dateA = a.Tanggal ? new Date(a.Tanggal.split('/').reverse().join('-')) : new Date(0);
+        const dateB = b.Tanggal ? new Date(b.Tanggal.split('/').reverse().join('-')) : new Date(0);
+        return dateB - dateA;
     });
     renderData(filteredData);
 }
 
 function resetFilters() {
     searchInput.value = ''; searchInputMobile.value = ''; statusFilter.value = '';
-    monthFilter.value = ''; yearFilter.value = ''; applyAndRenderFilters();
+    monthFilter.value = ''; yearFilter.value = ''; 
+    currentPage = 1;
+    applyAndRenderFilters();
 }
 
 function syncMobileFilters() {
@@ -834,24 +786,82 @@ function togglePin(id) {
     const originalPinStatus = item.Pin;
     const newPinStatus = !(originalPinStatus === true || originalPinStatus === 'TRUE');
 
-    // 1. Optimistically update local data and UI
     localData[itemIndex].Pin = newPinStatus;
     applyAndRenderFilters();
 
-    // 2. Send request to server
     const dataToUpdate = { ...item, Pin: newPinStatus, action: 'update', files: [] };
     sendDataToServer(dataToUpdate)
         .catch(error => {
-            // 3. If it fails, revert the change and show an error
             showError(`Gagal menyematkan: ${error.message}. Mengembalikan.`);
             localData[itemIndex].Pin = originalPinStatus;
             applyAndRenderFilters();
         });
 }
 
-
 // --- EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Inisialisasi semua elemen DOM di sini setelah dokumen siap
+    body = document.body;
+    pinModalOverlay = document.getElementById('pin-modal-overlay');
+    pinForm = document.getElementById('pin-form');
+    pinInput = document.getElementById('pin-input');
+    pinError = document.getElementById('pin-error');
+    mainContainer = document.getElementById('main-container');
+    addDataButton = document.getElementById('add-data-button');
+    loadingDiv = document.getElementById('loading');
+    errorDiv = document.getElementById('error');
+    errorMessageP = document.getElementById('error-message');
+    listView = document.getElementById('list-view');
+    detailView = document.getElementById('detail-view');
+    detailContent = document.getElementById('detail-content');
+    pageTitle = document.getElementById('page-title');
+    sidebar = document.getElementById('sidebar');
+    sidebarOverlay = document.getElementById('sidebar-overlay');
+    hamburgerButton = document.getElementById('hamburger-button');
+    closeSidebarButton = document.getElementById('close-sidebar-button');
+    navKinerja = document.getElementById('nav-kinerja');
+    navSkp = document.getElementById('nav-skp');
+    kinerjaView = document.getElementById('kinerja-view');
+    tableBody = document.getElementById('kinerja-table-body');
+    cardContainer = document.getElementById('kinerja-card-container');
+    skpView = document.getElementById('skp-view');
+    skpTableBody = document.getElementById('skp-table-body');
+    filterBar = document.getElementById('filter-bar');
+    paginationContainer = document.getElementById('pagination-container');
+    formModalOverlay = document.getElementById('form-modal-overlay');
+    closeFormModalButton = document.getElementById('close-form-modal');
+    form = document.getElementById('kinerja-form');
+    submitButton = document.getElementById('submit-button');
+    idKinerjaInput = document.getElementById('id-kinerja');
+    tanggalInput = document.getElementById('tanggal');
+    deskripsiInput = document.getElementById('deskripsi');
+    statusContainer = document.getElementById('status-container');
+    statusInput = document.getElementById('status-input');
+    fileInput = document.getElementById('file-input');
+    fileNameSpan = document.getElementById('file-name');
+    fileLamaP = document.getElementById('file-lama');
+    deleteModalOverlay = document.getElementById('delete-modal-overlay');
+    cancelDeleteButton = document.getElementById('cancel-delete-button');
+    confirmDeleteButton = document.getElementById('confirm-delete-button');
+    searchInput = document.getElementById('search-input');
+    statusFilter = document.getElementById('status-filter');
+    monthFilter = document.getElementById('month-filter');
+    yearFilter = document.getElementById('year-filter');
+    resetFilterButton = document.getElementById('reset-filter-button');
+    reloadDataButton = document.getElementById('reload-data-button');
+    mobileFilterButton = document.getElementById('mobile-filter-button');
+    mobileFilterModal = document.getElementById('mobile-filter-modal');
+    closeMobileFilterButton = document.getElementById('close-mobile-filter-button');
+    applyMobileFilterButton = document.getElementById('apply-mobile-filter-button');
+    searchInputMobile = document.getElementById('search-input-mobile');
+    statusFilterMobile = document.getElementById('status-filter-mobile');
+    monthFilterMobile = document.getElementById('month-filter-mobile');
+    yearFilterMobile = document.getElementById('year-filter-mobile');
+    colorContainer = document.getElementById('color-container');
+    warnaInput = document.getElementById('warna-input');
+    resetFilterButtonMobile = document.getElementById('reset-filter-button-mobile');
+
+    // Lanjutkan dengan sisa inisialisasi
     lucide.createIcons();
     renderStatusButtons();
     renderColorButtons();
@@ -875,11 +885,11 @@ document.addEventListener('DOMContentLoaded', () => {
     sidebarOverlay.addEventListener('click', closeMobileSidebar);
 
     // Filter Listeners
-    [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
-    searchInputMobile.addEventListener('input', applyAndRenderFilters);
+    [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', () => { currentPage = 1; applyAndRenderFilters(); }));
+    searchInputMobile.addEventListener('input', () => { currentPage = 1; applyAndRenderFilters(); });
     mobileFilterButton.addEventListener('click', () => { syncDesktopFilters(); mobileFilterModal.classList.remove('hidden'); });
     closeMobileFilterButton.addEventListener('click', () => mobileFilterModal.classList.add('hidden'));
-    applyMobileFilterButton.addEventListener('click', () => { syncMobileFilters(); applyAndRenderFilters(); mobileFilterModal.classList.add('hidden'); });
+    applyMobileFilterButton.addEventListener('click', () => { currentPage = 1; syncMobileFilters(); applyAndRenderFilters(); mobileFilterModal.classList.add('hidden'); });
     
     // Daftarkan Service Worker
     if ('serviceWorker' in navigator) {
