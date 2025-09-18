@@ -1,5 +1,5 @@
 // --- PENTING: Ganti dengan URL Anda ---
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw4uaI9IbuFv6g9VLGgTVm5jcrI694MNBBG_-UUXH0FUdQLnLhjhTk8qdBDB6XlVHWaqA/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwxslQdGhgnr2brwrT8RK7tjiagiAVdbPBF8Gxbwuj2cdzQKUyjU0qkBzzqaFodTSqBdA/exec';
 
 // --- Variabel Global ---
 let localData = [];
@@ -660,15 +660,7 @@ async function togglePin(id) {
 
     applyAndRenderFilters();
 
-    // *** PERBAIKAN BUG ***
-    // Pastikan data yang dikirim lengkap
-    const dataToUpdate = { 
-        ...item, 
-        Tanggal: item.Tanggal.split('/').reverse().join('-'), // Konversi format tanggal
-        Pin: item.Pin, 
-        action: 'update', 
-        files: [] // Tidak ada perubahan file
-    };
+    const dataToUpdate = { ...item, Pin: item.Pin, action: 'update', files: [] };
     
     try {
         await sendDataToServer(dataToUpdate);
