@@ -40,7 +40,9 @@ const pageTitle = document.getElementById('page-title');
 
 // Elemen Navigasi & Sidebar
 const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
 const hamburgerButton = document.getElementById('hamburger-button');
+const closeSidebarButton = document.getElementById('close-sidebar-button');
 const navKinerja = document.getElementById('nav-kinerja');
 const navSkp = document.getElementById('nav-skp');
 
@@ -90,10 +92,8 @@ const resetFilterButtonMobile = document.getElementById('reset-filter-button-mob
 // --- FUNGSI UTAMA & MANAJEMEN APLIKASI ---
 
 async function initializeApp() {
-    // 1. Prioritaskan fetch data Kinerja dan tampilkan loading
-    await fetchData('kinerja', false); // false = jangan di latar belakang
-    // 2. Setelah Kinerja selesai, fetch data SKP secara diam-diam
-    fetchData('skp', true); // true = di latar belakang
+    await fetchData('kinerja', false);
+    fetchData('skp', true);
 }
 
 function handlePinSubmit(e) {
@@ -101,7 +101,7 @@ function handlePinSubmit(e) {
     if (pinInput.value === CORRECT_PIN) {
         pinModalOverlay.classList.add('opacity-0', 'pointer-events-none');
         mainContainer.classList.remove('hidden');
-        initializeApp(); // Panggil fungsi inisialisasi baru
+        initializeApp();
     } else {
         const pinModalContent = pinModalOverlay.querySelector('div');
         pinError.textContent = 'PIN salah, coba lagi.';
@@ -113,31 +113,31 @@ function handlePinSubmit(e) {
 }
 
 function switchView(viewName) {
-    if (activeView === viewName) return; // Jangan lakukan apa-apa jika view sudah aktif
+    if (activeView === viewName) return;
     activeView = viewName;
     hideDetailView();
 
     const isKinerjaView = viewName === 'kinerja';
 
-    // Atur visibilitas view utama dan UI terkait
     kinerjaView.classList.toggle('hidden', !isKinerjaView);
     skpView.classList.toggle('hidden', isKinerjaView);
     filterBar.classList.toggle('hidden', !isKinerjaView);
     addDataButton.classList.toggle('hidden', !isKinerjaView);
     pageTitle.textContent = isKinerjaView ? 'Kinerja' : 'SKP';
 
-    // Atur status aktif pada navigasi
     navKinerja.classList.toggle('active', isKinerjaView);
     navSkp.classList.toggle('active', !isKinerjaView);
 
-    // Render data dari variabel yang sudah ada, jangan fetch lagi
     if (isKinerjaView) {
         if (localData.length > 0) applyAndRenderFilters();
     } else {
         if (skpData.length > 0) renderSkpData(skpData);
-        else if (isDataLoading.skp) { // Tampilkan loading kecil jika data skp masih diambil
+        else if (isDataLoading.skp) {
             skpTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">Memuat data SKP...</td></tr>`;
         }
+    }
+    if (window.innerWidth < 768) {
+        closeMobileSidebar();
     }
 }
 
@@ -155,14 +155,12 @@ async function fetchData(view, isBackground = false) {
 
         if (view === 'kinerja') {
             localData = data;
-            // Hanya render jika ini bukan pemuatan latar belakang DAN view kinerja sedang aktif
             if (!isBackground && activeView === 'kinerja') {
                 populateFilters();
                 applyAndRenderFilters();
             }
         } else if (view === 'skp') {
             skpData = data;
-             // Hanya render jika ini bukan pemuatan latar belakang DAN view skp sedang aktif
             if (!isBackground && activeView === 'skp') {
                 renderSkpData(skpData);
             }
@@ -179,8 +177,21 @@ async function fetchData(view, isBackground = false) {
 }
 
 function toggleSidebar() {
-    body.classList.toggle('sidebar-collapsed');
+    if (window.innerWidth < 768) {
+        // Mobile behavior: open as overlay
+        sidebar.classList.remove('-translate-x-full');
+        sidebarOverlay.classList.remove('hidden');
+    } else {
+        // Desktop behavior: toggle collapsed state
+        body.classList.toggle('sidebar-collapsed');
+    }
 }
+
+function closeMobileSidebar() {
+    sidebar.classList.add('-translate-x-full');
+    sidebarOverlay.classList.add('hidden');
+}
+
 
 // --- FUNGSI DETAIL VIEW ---
 
@@ -763,6 +774,8 @@ document.addEventListener('DOMContentLoaded', () => {
     navKinerja.addEventListener('click', (e) => { e.preventDefault(); switchView('kinerja'); });
     navSkp.addEventListener('click', (e) => { e.preventDefault(); switchView('skp'); });
     hamburgerButton.addEventListener('click', toggleSidebar);
+    closeSidebarButton.addEventListener('click', closeMobileSidebar);
+    sidebarOverlay.addEventListener('click', closeMobileSidebar);
 
     // Filter Listeners
     [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
