@@ -1,31 +1,25 @@
 // --- PENTING: Ganti dengan URL dan PIN Anda ---
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzU9-HXyIc4_aXXF8p17ckDMtG7zQYeCU2RnMk94cKpZVFv46oCUw1Md8zLuUgIwFSj2Q/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwbtx7WYlcVyGX8AEkCiyLjk2iBoA_HIfVHFyi-ljYbIwPBJT2a3HhomIoLIynoOOfVMw/exec';
 const CORRECT_PIN = '3390'; // Ganti dengan PIN 4 digit rahasia Anda
 
 // --- Variabel Global ---
-let localData = [];
+let localData = []; // Untuk data Kinerja
+let skpData = []; // Untuk data SKP
 let fileData = [];
 let currentlyEditingId = null;
 let activeDetailId = null;
+let activeView = 'kinerja'; // 'kinerja' atau 'skp'
 const statusOptions = ['Hadir', 'Lembur', 'Cuti', 'Dinas', 'Sakit', 'ST'];
 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
-// Palet Warna Pastel Baru
+// Palet Warna Pastel
 const colorOptions = {
-    'default': 'bg-white hover:bg-gray-50',
-    'blue': 'bg-blue-50 hover:bg-blue-100',
-    'green': 'bg-green-50 hover:bg-green-100',
-    'yellow': 'bg-yellow-50 hover:bg-yellow-100',
-    'red': 'bg-red-50 hover:bg-red-100',
-    'purple': 'bg-purple-50 hover:bg-purple-100',
+    'default': 'bg-white hover:bg-gray-50', 'blue': 'bg-blue-50 hover:bg-blue-100', 'green': 'bg-green-50 hover:bg-green-100',
+    'yellow': 'bg-yellow-50 hover:bg-yellow-100', 'red': 'bg-red-50 hover:bg-red-100', 'purple': 'bg-purple-50 hover:bg-purple-100',
 };
 const colorClasses = {
-    'blue': 'bg-blue-300',
-    'green': 'bg-green-300',
-    'yellow': 'bg-yellow-300',
-    'red': 'bg-red-300',
-    'purple': 'bg-purple-300',
-}
+    'blue': 'bg-blue-300', 'green': 'bg-green-300', 'yellow': 'bg-yellow-300', 'red': 'bg-red-300', 'purple': 'bg-purple-300',
+};
 
 // --- Elemen DOM ---
 const pinModalOverlay = document.getElementById('pin-modal-overlay');
@@ -39,9 +33,29 @@ const errorDiv = document.getElementById('error');
 const errorMessageP = document.getElementById('error-message');
 const listView = document.getElementById('list-view');
 const detailView = document.getElementById('detail-view');
-const tableBody = document.getElementById('kinerja-table-body');
-const cardContainer = document.getElementById('card-container');
 const detailContent = document.getElementById('detail-content');
+const pageTitle = document.getElementById('page-title');
+
+// Elemen Navigasi
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+const hamburgerButton = document.getElementById('hamburger-button');
+const closeSidebarButton = document.getElementById('close-sidebar-button');
+const navKinerja = document.getElementById('nav-kinerja');
+const navSkp = document.getElementById('nav-skp');
+
+// Elemen View Kinerja
+const kinerjaView = document.getElementById('kinerja-view');
+const tableBody = document.getElementById('kinerja-table-body');
+const cardContainer = document.getElementById('kinerja-card-container');
+const kinerjaFiltersDesktop = document.getElementById('kinerja-filters-desktop');
+const kinerjaFiltersMobile = document.getElementById('kinerja-filters-mobile');
+
+// Elemen View SKP
+const skpView = document.getElementById('skp-view');
+const skpTableBody = document.getElementById('skp-table-body');
+
+// Elemen Form & Modal
 const formModalOverlay = document.getElementById('form-modal-overlay');
 const closeFormModalButton = document.getElementById('close-form-modal');
 const form = document.getElementById('kinerja-form');
@@ -63,7 +77,6 @@ const monthFilter = document.getElementById('month-filter');
 const yearFilter = document.getElementById('year-filter');
 const resetFilterButton = document.getElementById('reset-filter-button');
 const reloadDataButton = document.getElementById('reload-data-button');
-// Mobile Filter Elements
 const mobileFilterButton = document.getElementById('mobile-filter-button');
 const mobileFilterModal = document.getElementById('mobile-filter-modal');
 const closeMobileFilterButton = document.getElementById('close-mobile-filter-button');
@@ -76,7 +89,7 @@ const colorContainer = document.getElementById('color-container');
 const warnaInput = document.getElementById('warna-input');
 const resetFilterButtonMobile = document.getElementById('reset-filter-button-mobile');
 
-// --- DEKLARASI FUNGSI ---
+// --- FUNGSI UTAMA & MANAJEMEN TAMPILAN ---
 
 function handlePinSubmit(e) {
     e.preventDefault();
@@ -84,8 +97,7 @@ function handlePinSubmit(e) {
     if (pinInput.value === CORRECT_PIN) {
         pinModalOverlay.classList.add('opacity-0', 'pointer-events-none');
         mainContainer.classList.remove('hidden');
-        addDataButton.classList.remove('hidden');
-        fetchData();
+        switchView('kinerja'); // Memulai dengan view kinerja
     } else {
         pinError.textContent = 'PIN salah, coba lagi.';
         pinModalContent.classList.add('shake');
@@ -94,19 +106,91 @@ function handlePinSubmit(e) {
         setTimeout(() => pinModalContent.classList.remove('shake'), 500);
     }
 }
+
+function switchView(viewName) {
+    activeView = viewName;
+    hideDetailView(); // Selalu tutup detail view saat berganti halaman
+
+    // Sembunyikan semua view utama
+    kinerjaView.classList.add('hidden');
+    skpView.classList.add('hidden');
+
+    // Atur visibilitas filter dan Tombol Tambah
+    const isKinerjaView = viewName === 'kinerja';
+    kinerjaFiltersDesktop.style.display = isKinerjaView ? 'flex' : 'none';
+    kinerjaFiltersMobile.style.display = isKinerjaView ? 'flex' : 'none';
+    addDataButton.classList.toggle('hidden', !isKinerjaView);
+
+    // Tampilkan view yang dipilih dan update UI
+    if (viewName === 'kinerja') {
+        kinerjaView.classList.remove('hidden');
+        pageTitle.textContent = 'Kinerja';
+        navKinerja.classList.add('active');
+        navSkp.classList.remove('active');
+        fetchData();
+    } else if (viewName === 'skp') {
+        skpView.classList.remove('hidden');
+        pageTitle.textContent = 'SKP';
+        navSkp.classList.add('active');
+        navKinerja.classList.remove('active');
+        fetchData();
+    }
+    
+    // Tutup sidebar di mobile setelah memilih menu
+    if (window.innerWidth < 768) {
+        closeSidebar();
+    }
+}
+
+async function fetchData() {
+    showLoading();
+    try {
+        const response = await fetch(`${GAS_WEB_APP_URL}?page=${activeView}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+
+        if (activeView === 'kinerja') {
+            localData = data;
+            populateFilters();
+            applyAndRenderFilters();
+        } else if (activeView === 'skp') {
+            skpData = data;
+            renderSkpData(skpData);
+        }
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
 function showDetailView(id) {
-    const itemData = localData.find(item => item['ID Kinerja'] === id);
+    let itemData;
+    if (activeView === 'kinerja') {
+        itemData = localData.find(item => item['ID Kinerja'] === id);
+    } else if (activeView === 'skp') {
+        itemData = skpData.find(item => item['Tahun'] + item['Atasan'] === id);
+    }
     if (!itemData) return;
+
     activeDetailId = id;
-    renderDetail(itemData);
+    if (activeView === 'kinerja') {
+        renderDetail(itemData);
+    } else if (activeView === 'skp') {
+        renderSkpDetail(itemData);
+    }
+
     listView.classList.remove('md:w-full');
     listView.classList.add('md:w-1/2');
     detailView.classList.remove('hidden');
     highlightActiveItem(id);
+
     if (window.innerWidth < 768) {
         listView.classList.add('hidden');
     }
 }
+
 function hideDetailView() {
     activeDetailId = null;
     detailView.classList.add('hidden');
@@ -117,53 +201,25 @@ function hideDetailView() {
     }
     highlightActiveItem(null);
 }
-function renderDetail(data) {
-    let files = [];
-    try {
-        if (data.File && typeof data.File === 'string') files = JSON.parse(data.File);
-    } catch (e) { console.error("Gagal parse JSON file:", e); }
-
-    detailContent.innerHTML = `
-        <button onclick="hideDetailView()" class="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition">
-            <i data-lucide="arrow-left" class="w-4 h-4"></i>
-            Kembali
-        </button>
-        <div class="flex justify-between items-start">
-            <div>
-                <label class="text-xs text-gray-500 uppercase font-semibold">ID Kinerja</label>
-                <p class="text-sm text-gray-700 font-mono break-all">${data['ID Kinerja'] || '-'}</p>
-            </div>
-            <div class="text-right flex-shrink-0 ml-4">
-                <label class="text-xs text-gray-500 uppercase font-semibold">Tanggal</label>
-                <p class="text-sm text-gray-900">${data.Tanggal || '-'}</p>
-            </div>
-        </div>
-        <div class="border-t pt-5 mt-5">
-            <div class="flex justify-between items-center mb-2">
-                <label class="text-xs text-gray-500 uppercase font-semibold">Deskripsi</label>
-                ${getStatusBadge(data.Status)}
-            </div>
-            <p class="text-sm text-gray-800 whitespace-pre-wrap">${data.Deskripsi || 'Tidak ada deskripsi.'}</p>
-        </div>
-        <div class="border-t pt-5 mt-5">
-            <label class="text-xs text-gray-500 uppercase font-semibold">Lampiran</label>
-            <div class="mt-2">${renderFilePreviews(files)}</div>
-        </div>
-    `;
-    lucide.createIcons();
-}
 
 function handleBodyClick(e) {
     const target = e.target;
     const itemElement = target.closest('[data-id]');
-    
     if (!itemElement) return;
     const id = itemElement.getAttribute('data-id');
 
-    if (target.closest('.edit-btn')) openEditForm(id);
-    else if (target.closest('.delete-btn')) openDeleteModal(id);
-    else if (target.closest('.pin-btn')) togglePin(id);
-    else if (target.closest('.data-cell')) showDetailView(id);
+    // Logika spesifik untuk Kinerja
+    if (activeView === 'kinerja') {
+        if (target.closest('.edit-btn')) openEditForm(id);
+        else if (target.closest('.delete-btn')) openDeleteModal(id);
+        else if (target.closest('.pin-btn')) togglePin(id);
+        else if (target.closest('.data-cell')) showDetailView(id);
+    }
+    // Logika spesifik untuk SKP
+    else if (activeView === 'skp') {
+        // Klik di manapun pada baris SKP akan membuka detail
+        showDetailView(id);
+    }
 }
 
 function highlightActiveItem(id) {
@@ -172,26 +228,13 @@ function highlightActiveItem(id) {
     });
 }
 
-async function fetchData() {
-    showLoading();
-    try {
-        const response = await fetch(GAS_WEB_APP_URL);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        localData = await response.json();
-        populateFilters();
-        applyAndRenderFilters();
-    } catch (error) {
-        showError(error.message);
-    } finally {
-        hideLoading();
-    }
-}
+// --- FUNGSI RENDER TAMPILAN KINERJA ---
 
 function renderData(dataToRender) {
     tableBody.innerHTML = '';
     cardContainer.innerHTML = '';
     if (dataToRender.length === 0) {
-        const emptyMessage = '<p class="col-span-full text-center py-10 text-gray-500">Tidak ada data yang cocok dengan filter.</p>';
+        const emptyMessage = '<p class="col-span-full text-center py-10 text-gray-500">Tidak ada data yang cocok.</p>';
         tableBody.innerHTML = `<tr><td colspan="5">${emptyMessage}</td></tr>`;
         cardContainer.innerHTML = emptyMessage;
         return;
@@ -206,22 +249,15 @@ function renderData(dataToRender) {
 
 function createTableRow(item) {
     const row = document.createElement('tr');
-    const colorClass = colorOptions[item.Warna] || colorOptions['default'];
-    row.className = `${colorClass}`;
+    row.className = `${colorOptions[item.Warna] || colorOptions['default']} cursor-pointer`;
     row.setAttribute('data-id', item['ID Kinerja']);
-    
     const isPinned = item.Pin === true || item.Pin === 'TRUE';
     const pinIcon = isPinned ? `<i data-lucide="pin" class="w-5 h-5 text-indigo-600 fill-indigo-200"></i>` : `<i data-lucide="pin" class="w-5 h-5"></i>`;
-
     row.innerHTML = `
-        <td class="px-6 py-4 whitespace-nowrap data-cell cursor-pointer">
-            ${getPreviewThumbnail(item.File)}
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap data-cell cursor-pointer"><div class="text-sm font-medium text-gray-900">${item.Tanggal || 'N/A'}</div></td>
-        <td class="px-6 py-4 data-cell cursor-pointer">
-            <div class="text-sm text-gray-700 whitespace-pre-wrap max-h-20 overflow-y-auto">${item.Deskripsi || ''}</div>
-        </td>
-        <td class="px-6 py-4 whitespace-nowrap data-cell cursor-pointer">${getStatusBadge(item.Status)}</td>
+        <td class="px-6 py-4 whitespace-nowrap data-cell">${getPreviewThumbnail(item.File)}</td>
+        <td class="px-6 py-4 whitespace-nowrap data-cell"><div class="text-sm font-medium text-gray-900">${item.Tanggal || 'N/A'}</div></td>
+        <td class="px-6 py-4 data-cell"><div class="text-sm text-gray-700 whitespace-pre-wrap max-h-20 overflow-y-auto">${item.Deskripsi || ''}</div></td>
+        <td class="px-6 py-4 whitespace-nowrap data-cell">${getStatusBadge(item.Status)}</td>
         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-right">
             <div class="flex items-center justify-end gap-1">
                 <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition pin-btn" title="Sematkan">${pinIcon}</button>
@@ -234,13 +270,10 @@ function createTableRow(item) {
 
 function createCardView(item) {
    const card = document.createElement('div');
-   const colorClass = colorOptions[item.Warna] || colorOptions['default'];
-   card.className = `rounded-xl shadow-md p-4 flex flex-col gap-3 ${colorClass}`;
+   card.className = `rounded-xl shadow-md p-4 flex flex-col gap-3 ${colorOptions[item.Warna] || colorOptions['default']}`;
    card.setAttribute('data-id', item['ID Kinerja']);
-
    const isPinned = item.Pin === true || item.Pin === 'TRUE';
    const pinIcon = isPinned ? `<i data-lucide="pin" class="w-5 h-5 text-indigo-600 fill-indigo-200"></i>` : `<i data-lucide="pin" class="w-5 h-5"></i>`;
-
    card.innerHTML = `
         <div class="data-cell cursor-pointer flex-1 flex items-start gap-4">
             ${getPreviewThumbnail(item.File)}
@@ -261,6 +294,91 @@ function createCardView(item) {
         </div>`;
     cardContainer.appendChild(card);
 }
+
+// --- FUNGSI RENDER TAMPILAN SKP ---
+
+function renderSkpData(dataToRender) {
+    skpTableBody.innerHTML = '';
+    if (dataToRender.length === 0) {
+        skpTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">Tidak ada data SKP.</td></tr>`;
+        return;
+    }
+    dataToRender.forEach(item => {
+        const row = document.createElement('tr');
+        const uniqueId = item['Tahun'] + item['Atasan'];
+        row.className = 'hover:bg-gray-50 cursor-pointer';
+        row.setAttribute('data-id', uniqueId);
+
+        const { predikatClass, nilaiClass } = getSkpColor(item.Predikat);
+
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.Tahun}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${item.Atasan}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="px-2 py-1 rounded-md font-semibold ${nilaiClass}">${item.Nilai}</span></td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="font-semibold ${predikatClass}">${item.Predikat}</span></td>
+            <td class="px-6 py-4 whitespace-nowrap text-center">
+                <button class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors">
+                    <i data-lucide="eye" class="w-4 h-4"></i>
+                    Lihat
+                </button>
+            </td>
+        `;
+        skpTableBody.appendChild(row);
+    });
+    lucide.createIcons();
+}
+
+function getSkpColor(predikat) {
+    switch (predikat) {
+        case 'Sangat Baik': return { predikatClass: 'text-emerald-700', nilaiClass: 'bg-emerald-100 text-emerald-800' };
+        case 'Baik': return { predikatClass: 'text-blue-700', nilaiClass: 'bg-blue-100 text-blue-800' };
+        case 'Cukup': return { predikatClass: 'text-amber-700', nilaiClass: 'bg-amber-100 text-amber-800' };
+        case 'Kurang': return { predikatClass: 'text-red-700', nilaiClass: 'bg-red-100 text-red-800' };
+        default: return { predikatClass: 'text-gray-700', nilaiClass: 'bg-gray-100 text-gray-800' };
+    }
+}
+
+
+// --- FUNGSI DETAIL VIEW ---
+
+function renderDetail(data) { // Detail untuk Kinerja
+    let files = [];
+    try { if (data.File && typeof data.File === 'string') files = JSON.parse(data.File); } catch (e) { console.error("Gagal parse JSON file:", e); }
+    detailContent.innerHTML = `
+        <button onclick="hideDetailView()" class="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali</button>
+        <div class="flex justify-between items-start">
+            <div><label class="text-xs text-gray-500 uppercase font-semibold">ID Kinerja</label><p class="text-sm text-gray-700 font-mono break-all">${data['ID Kinerja'] || '-'}</p></div>
+            <div class="text-right flex-shrink-0 ml-4"><label class="text-xs text-gray-500 uppercase font-semibold">Tanggal</label><p class="text-sm text-gray-900">${data.Tanggal || '-'}</p></div>
+        </div>
+        <div class="border-t pt-5 mt-5">
+            <div class="flex justify-between items-center mb-2"><label class="text-xs text-gray-500 uppercase font-semibold">Deskripsi</label>${getStatusBadge(data.Status)}</div>
+            <p class="text-sm text-gray-800 whitespace-pre-wrap">${data.Deskripsi || 'Tidak ada deskripsi.'}</p>
+        </div>
+        <div class="border-t pt-5 mt-5">
+            <label class="text-xs text-gray-500 uppercase font-semibold">Lampiran</label>
+            <div class="mt-2">${renderFilePreviews(files)}</div>
+        </div>`;
+    lucide.createIcons();
+}
+
+function renderSkpDetail(data) { // Detail untuk SKP
+    const embedUrl = createEmbedUrl(data.File);
+    detailContent.innerHTML = `
+        <button onclick="hideDetailView()" class="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali</button>
+        <div>
+            <div class="flex justify-between items-center mb-2">
+                <label class="text-xs text-gray-500 uppercase font-semibold">Pratinjau File SKP Tahun ${data.Tahun}</label>
+                <a href="${data.File}" target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-600 hover:underline font-semibold">Buka di Tab Baru <i data-lucide="external-link" class="inline w-3 h-3"></i></a>
+            </div>
+            ${embedUrl ? `<iframe src="${embedUrl}" class="w-full h-[70vh] border rounded-lg bg-gray-100" frameborder="0"></iframe>` : 
+            `<div class="w-full h-96 border rounded-lg bg-gray-50 flex flex-col items-center justify-center p-4"><i data-lucide="file-x" class="w-12 h-12 text-gray-400 mb-2"></i><p class="text-sm text-gray-500">URL file tidak valid atau tidak dapat disematkan.</p></div>`
+            }
+        </div>
+    `;
+    lucide.createIcons();
+}
+
+// --- FUNGSI HELPER & LAIN-LAIN ---
 
 function openCreateForm() {
     currentlyEditingId = null;
@@ -321,17 +439,19 @@ async function handleFormSubmit(e) {
     closeFormModal();
     try {
         const response = await sendDataToServer(data);
-        if (response.status === 'success') updateLocalData(response.savedData);
-        else throw new Error(response.message || 'Gagal menyimpan data.');
+        if (response.status === 'success') {
+            updateLocalData(response.savedData);
+        } else {
+            throw new Error(response.message || 'Gagal menyimpan data.');
+        }
     } catch (error) {
         showError(error.message);
-        fetchData();
+        fetchData(); // Re-fetch to sync with server on error
     } finally {
         submitButton.disabled = false;
         submitButton.textContent = 'Simpan Kinerja';
     }
 }
-
 
 function openDeleteModal(id) {
     confirmDeleteButton.setAttribute('data-id', id);
@@ -341,14 +461,16 @@ function openDeleteModal(id) {
 function executeDelete() {
     const id = confirmDeleteButton.getAttribute('data-id');
     if (!id) return;
+
     const originalData = [...localData];
     localData = localData.filter(item => item['ID Kinerja'] !== id);
     applyAndRenderFilters();
     deleteModalOverlay.classList.add('hidden');
+
     sendDataToServer({ 'ID Kinerja': id, action: 'delete' })
         .catch(error => {
             showError(`Gagal menghapus: ${error.message}`);
-            localData = originalData;
+            localData = originalData; // Revert on error
             applyAndRenderFilters();
         });
 }
@@ -413,7 +535,9 @@ function handleFileSelect() {
         reader.onload = (e) => {
             fileData.push({ base64Data: e.target.result.split(',')[1], fileName: file.name, mimeType: file.type });
             filesToProcess--;
-            if (filesToProcess === 0) console.log(`${fileData.length} files ready to upload.`);
+            if (filesToProcess === 0) {
+                console.log(`${fileData.length} files ready to upload.`);
+            }
         };
         reader.readAsDataURL(file);
     });
@@ -443,7 +567,7 @@ function getPreviewThumbnail(fileJson) {
 }
 
 function createEmbedUrl(originalUrl) {
-    const match = originalUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    const match = originalUrl ? originalUrl.match(/drive\.google\.com\/file\/d\/([^/]+)/) : null;
     return match ? `https://drive.google.com/file/d/${match[1]}/preview` : null;
 }
 
@@ -471,7 +595,9 @@ function renderFilePreviews(files) {
         html += `<div class="space-y-4">`;
         docFiles.forEach(file => {
             const embedUrl = createEmbedUrl(file.url);
-            if (embedUrl) html += `<iframe src="${embedUrl}" class="w-full h-96 border rounded-lg bg-gray-100" frameborder="0"></iframe>`;
+            if (embedUrl) {
+                html += `<iframe src="${embedUrl}" class="w-full h-96 border rounded-lg bg-gray-100" frameborder="0"></iframe>`;
+            }
         });
         html += `</div>`;
     }
@@ -486,21 +612,24 @@ function getStatusColor(status) {
 function showLoading() {
     loadingDiv.innerHTML = '<p class="text-gray-500">Memuat data...</p>';
     loadingDiv.style.display = 'block';
-    if(tableBody.parentElement) tableBody.parentElement.classList.add('hidden');
-    cardContainer.classList.add('hidden');
+    kinerjaView.classList.add('hidden');
+    skpView.classList.add('hidden');
     errorDiv.classList.add('hidden');
 }
 
 function hideLoading() {
     loadingDiv.style.display = 'none';
-    if(tableBody.parentElement) tableBody.parentElement.classList.remove('hidden');
-    cardContainer.classList.remove('hidden');
 }
 
 function showError(message) {
     hideLoading();
     errorDiv.classList.remove('hidden');
     errorMessageP.textContent = message;
+    if (activeView === 'kinerja') {
+        kinerjaView.classList.remove('hidden');
+    } else {
+        skpView.classList.remove('hidden');
+    }
 }
 
 function populateFilters() {
@@ -537,12 +666,11 @@ function applyAndRenderFilters() {
         const pinA = a.Pin === true || a.Pin === 'TRUE' ? 1 : 0;
         const pinB = b.Pin === true || b.Pin === 'TRUE' ? 1 : 0;
         if (pinB !== pinA) return pinB - pinA;
-        return 0;
+        return 0; // Maintain original sort order for items with same pin status
     });
 
     renderData(filteredData);
 }
-
 
 function resetFilters() {
     searchInput.value = '';
@@ -628,6 +756,15 @@ async function togglePin(id) {
     }
 }
 
+function openSidebar() { 
+    sidebar.classList.remove('-translate-x-full'); 
+    sidebarOverlay.classList.remove('hidden'); 
+}
+
+function closeSidebar() { 
+    sidebar.classList.add('-translate-x-full'); 
+    sidebarOverlay.classList.add('hidden'); 
+}
 
 // --- EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -647,14 +784,16 @@ document.addEventListener('DOMContentLoaded', () => {
     [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
     searchInputMobile.addEventListener('input', applyAndRenderFilters);
     
-    mobileFilterButton.addEventListener('click', () => {
-        syncDesktopFilters();
-        mobileFilterModal.classList.remove('hidden');
-    });
+    // Navigasi
+    navKinerja.addEventListener('click', (e) => { e.preventDefault(); switchView('kinerja'); });
+    navSkp.addEventListener('click', (e) => { e.preventDefault(); switchView('skp'); });
+    hamburgerButton.addEventListener('click', openSidebar);
+    closeSidebarButton.addEventListener('click', closeSidebar);
+    sidebarOverlay.addEventListener('click', closeSidebar);
+
+    // Filter Mobile
+    mobileFilterButton.addEventListener('click', () => { syncDesktopFilters(); mobileFilterModal.classList.remove('hidden'); });
     closeMobileFilterButton.addEventListener('click', () => mobileFilterModal.classList.add('hidden'));
-    applyMobileFilterButton.addEventListener('click', () => {
-        syncMobileFilters();
-        applyAndRenderFilters();
-        mobileFilterModal.classList.add('hidden');
-    });
+    applyMobileFilterButton.addEventListener('click', () => { syncMobileFilters(); applyAndRenderFilters(); mobileFilterModal.classList.add('hidden'); });
 });
+
