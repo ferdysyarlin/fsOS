@@ -43,10 +43,6 @@
             .sidebar-collapsed .sidebar .placeholder-logo { display: block; }
         }
 
-        /* --- Mobile Styles (below md) --- */
-        @media (max-width: 767px) {
-            .sidebar { transform: translateX(-100%); }
-        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 sidebar-collapsed">
@@ -106,9 +102,9 @@
                 <div id="kinerja-view-filters" class="space-y-4">
                     <div class="hidden md:flex items-center gap-2">
                         <input type="search" id="search-input" placeholder="Cari deskripsi..." class="flex-grow md:flex-grow-0 md:w-48 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm">
-                        <select id="status-filter" class="w-36 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select>
-                        <select id="month-filter" class="w-36 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select>
-                        <select id="year-filter" class="w-28 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select>
+                        <select id="status-filter" class="w-auto px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select>
+                        <select id="month-filter" class="w-auto px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select>
+                        <select id="year-filter" class="w-auto px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select>
                         <button id="reset-filter-button" class="p-2 rounded-lg border bg-gray-100 text-gray-600 hover:bg-gray-200 transition" aria-label="Reset Filter"><i data-lucide="rotate-ccw" class="w-5 h-5"></i></button>
                     </div>
                     <div class="flex md:hidden items-center gap-2">
@@ -119,7 +115,7 @@
                 </div>
             </div>
 
-            <main class="max-w-screen-2xl mx-auto p-4 sm:px-6 lg:px-8 flex flex-col md:flex-row gap-6">
+            <main class="max-w-screen-2xl mx-auto p-4 sm:px-6 lg:px-8 flex flex-col md:flex-row gap-6 w-full">
                 <div id="list-view" class="w-full md:w-full transition-all duration-300">
                     <div id="loading" class="text-center py-10"></div>
                     <div id="error" class="hidden text-center py-10 bg-red-50 p-4 rounded-lg">
