@@ -34,7 +34,6 @@
             .sidebar-collapsed .sidebar { width: 4.5rem; /* w-18 */ }
             .sidebar-collapsed .main-content { padding-left: 4.5rem; }
             
-            /* Perbaikan Ikon: Sembunyikan teks sepenuhnya dan pusatkan ikon */
             .sidebar-collapsed .sidebar .nav-text { display: none; }
             .sidebar-collapsed .sidebar .nav-link { justify-content: center; }
 
@@ -142,7 +141,7 @@
                     </div>
 
                     <div id="skp-view" class="hidden">
-                        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                         <div class="hidden sm:block bg-white rounded-xl shadow-sm overflow-hidden">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
@@ -156,7 +155,11 @@
                                 <tbody id="skp-table-body" class="bg-white divide-y divide-gray-200"></tbody>
                             </table>
                         </div>
+                        <div id="skp-card-container" class="sm:hidden grid grid-cols-1 gap-4"></div>
                     </div>
+
+                    <!-- Pagination Container -->
+                    <div id="pagination-container" class="mt-6"></div>
                 </div>
 
                 <div id="detail-view" class="hidden w-full md:w-1/2 transition-all duration-300 relative">
