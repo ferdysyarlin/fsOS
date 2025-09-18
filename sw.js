@@ -5,10 +5,6 @@ const urlsToCache = [
   '/index.html',
   '/admin.html',
   '/admin.js',
-  '/kinerja.html', // Ditambahkan
-  '/kinerja.js',   // Ditambahkan
-  '/skp.html',      // Ditambahkan
-  '/skp.js',        // Ditambahkan
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/lucide@latest',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
