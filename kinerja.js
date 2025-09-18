@@ -347,10 +347,8 @@ async function handleFormSubmit(e) {
     const action = currentlyEditingId ? 'update' : 'create';
     data.action = action;
     
-    // *** PERBAIKAN BUG ***
     if (action === 'create') {
-        data.Pin = false; // Pastikan data baru memiliki properti Pin
-        // Properti Warna sudah diambil dari form, jadi tidak perlu ditambahkan
+        data.Pin = false; 
     }
     
     if (data.action === 'create') {
@@ -394,9 +392,14 @@ function executeDelete() {
 }
 
 async function sendDataToServer(data) {
+    // *** PERBAIKAN CORS ***
     const response = await fetch(GAS_WEB_APP_URL, {
-        method: 'POST', redirect: "follow", body: JSON.stringify(data),
-        headers: { "Content-Type": "text/plain;charset=utf-8" }
+        method: 'POST', 
+        redirect: "follow", 
+        body: JSON.stringify(data),
+        headers: { 
+            "Content-Type": "text/plain;charset=utf-8" 
+        }
     });
     if (!response.ok) throw new Error('Network response was not ok.');
     return response.json();
