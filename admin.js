@@ -1,5 +1,5 @@
 // --- PENTING: Ganti dengan URL dan PIN Anda ---
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbx6-iJ1k6Q_65bqtQ4BJJk85LBGp_AoiOqfHWi40n9HmlexP4u57qcqtOSRYvNA-Me8AQ/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzxaz5tX95hSLBunt7oXyReaZIHLJqUNdV4xjwgDbEAaA8-KJ0dyvgdCP8r_sTORomSrA/exec';
 const CORRECT_PIN = '3390'; // Ganti dengan PIN 4 digit rahasia Anda
 
 // --- Variabel Global ---
