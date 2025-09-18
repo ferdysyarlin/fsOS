@@ -614,6 +614,12 @@ function showLoading() {
 
 function hideLoading() {
     loadingDiv.style.display = 'none';
+    // Perbaikan: Tampilkan view yang sesuai setelah loading selesai
+    if (activeView === 'kinerja') {
+        kinerjaView.classList.remove('hidden');
+    } else if (activeView === 'skp') {
+        skpView.classList.remove('hidden');
+    }
 }
 
 function showError(message) {
