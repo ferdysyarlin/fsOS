@@ -89,7 +89,7 @@ const colorContainer = document.getElementById('color-container');
 const warnaInput = document.getElementById('warna-input');
 const resetFilterButtonMobile = document.getElementById('reset-filter-button-mobile');
 
-// --- FUNGSI UTAMA & MANAJEMEN TAMPILAN ---
+// --- FUNGSI UTAMA & MANAJENEN TAMPILAN ---
 
 function handlePinSubmit(e) {
     e.preventDefault();
@@ -737,22 +737,33 @@ function setActiveColor(activeColor) {
 }
 
 async function togglePin(id) {
-    const item = localData.find(d => d['ID Kinerja'] === id);
-    if (!item) return;
+    const itemIndex = localData.findIndex(d => d['ID Kinerja'] === id);
+    if (itemIndex === -1) return;
 
-    const currentPinStatus = item.Pin === true || item.Pin === 'TRUE';
-    item.Pin = !currentPinStatus;
+    const item = localData[itemIndex];
+    const newPinStatus = !(item.Pin === true || item.Pin === 'TRUE');
 
-    applyAndRenderFilters();
-
-    const dataToUpdate = { ...item, Pin: item.Pin, action: 'update', files: [] };
+    // Buat objek data untuk server dengan status pin yang baru
+    const dataToUpdate = { ...item, Pin: newPinStatus, action: 'update', files: [] };
     
+    // Nonaktifkan tombol untuk mencegah klik ganda dan beri feedback
+    const pinButton = document.querySelector(`[data-id="${id}"] .pin-btn`);
+    if (pinButton) pinButton.disabled = true;
+
     try {
+        // Tunggu server mengonfirmasi perubahan
         await sendDataToServer(dataToUpdate);
-    } catch (error) {
-        showError(`Gagal menyimpan status pin: ${error.message}`);
-        item.Pin = currentPinStatus; 
+
+        // Jika berhasil, update data lokal dan render ulang seluruh daftar
+        localData[itemIndex].Pin = newPinStatus;
         applyAndRenderFilters();
+
+    } catch (error) {
+        // Jika server gagal, tampilkan error. UI tidak pernah berubah.
+        showError(`Gagal menyimpan status pin: ${error.message}`);
+    } finally {
+        // Selalu aktifkan kembali tombolnya
+        if (pinButton) pinButton.disabled = false;
     }
 }
 
