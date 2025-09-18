@@ -1,5 +1,5 @@
 // --- PENTING: Ganti dengan URL dan PIN Anda ---
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzLKJ3844QnYp2VFHnxZqOIgXiJQnOsdODkNWIR62yAV6TAwm293umXAzQBgZEv0rEY/exec';
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzVqZWX2XCQcmChRQnIrR39TlgDShuaCob3mjyPy0_kajqo2Zl7tHZs2unNH79z1r5gjQ/exec';
 const CORRECT_PIN = '3390'; // Ganti dengan PIN 4 digit rahasia Anda
 
 // --- Variabel Global ---
@@ -14,6 +14,7 @@ const statusOptions = ['Hadir', 'Lembur', 'Cuti', 'Dinas', 'Sakit', 'ST'];
 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 let currentPage = 1;
 const ITEMS_PER_PAGE = 50;
+const INITIAL_LOAD_COUNT = 50;
 
 // Palet Warna Pastel
 const colorOptions = {
@@ -25,13 +26,16 @@ const colorClasses = {
 };
 
 // --- Elemen DOM (Deklarasi Awal) ---
-let body, pinModalOverlay, pinForm, pinInput, pinError, mainContainer, addDataButton, loadingDiv, errorDiv, errorMessageP, listView, detailView, detailContent, pageTitle, sidebar, sidebarOverlay, hamburgerButton, closeSidebarButton, navKinerja, navSkp, kinerjaView, tableBody, cardContainer, skpView, skpTableBody, skpCardContainer, filterBar, paginationContainer, formModalOverlay, closeFormModalButton, form, submitButton, idKinerjaInput, tanggalInput, deskripsiInput, statusContainer, statusInput, fileInput, fileNameSpan, fileLamaP, deleteModalOverlay, cancelDeleteButton, confirmDeleteButton, searchInput, statusFilter, monthFilter, yearFilter, resetFilterButton, reloadDataButton, mobileFilterButton, mobileFilterModal, closeMobileFilterButton, applyMobileFilterButton, searchInputMobile, statusFilterMobile, monthFilterMobile, yearFilterMobile, colorContainer, warnaInput, resetFilterButtonMobile;
+let body, pinModalOverlay, pinForm, pinInput, pinError, mainContainer, addDataButton, loadingDiv, errorDiv, errorMessageP, listView, detailView, detailContent, pageTitle, sidebar, sidebarOverlay, hamburgerButton, closeSidebarButton, navKinerja, navSkp, kinerjaView, tableBody, cardContainer, skpView, skpTableBody, skpCardContainer, filterBar, paginationContainer, formModalOverlay, closeFormModalButton, form, submitButton, idKinerjaInput, tanggalInput, deskripsiInput, statusContainer, statusInput, fileInput, fileNameSpan, fileLamaP, deleteModalOverlay, cancelDeleteButton, confirmDeleteButton, searchInput, statusFilter, monthFilter, yearFilter, resetFilterButton, reloadDataButton, mobileFilterButton, mobileFilterModal, closeMobileFilterButton, applyMobileFilterButton, searchInputMobile, statusFilterMobile, monthFilterMobile, yearFilterMobile, colorContainer, warnaInput, resetFilterButtonMobile, toastNotification;
 
 
 // --- FUNGSI UTAMA & MANAJENEN APLIKASI ---
 
 async function initializeApp() {
-    await fetchData('kinerja', false);
+    // Muat 50 data pertama secara cepat
+    await fetchData('kinerja', false, INITIAL_LOAD_COUNT);
+    // Muat sisa data kinerja dan data SKP di latar belakang
+    fetchData('kinerja', true, 0, INITIAL_LOAD_COUNT); // Offset 50
     fetchData('skp', true);
 }
 
@@ -75,7 +79,7 @@ function switchView(viewName) {
     } else {
         if (skpData.length > 0) renderSkpData(skpData);
         else if (isDataLoading.skp) {
-             showLoading(); // Tampilkan loading untuk SKP jika datanya belum siap
+             showLoading(); 
         }
     }
     if (window.innerWidth < 768) {
@@ -83,28 +87,39 @@ function switchView(viewName) {
     }
 }
 
-async function fetchData(view, isBackground = false) {
-    isDataLoading[view] = true;
+async function fetchData(view, isBackground = false, limit = 0, offset = 0) {
+    if (view === 'kinerja') isDataLoading.kinerja = true;
+    if (view === 'skp') isDataLoading.skp = true;
+    
     if (!isBackground) {
         showLoading();
     }
 
+    let url = `${GAS_WEB_APP_URL}?page=${view}`;
+    if (limit > 0) url += `&limit=${limit}`;
+    if (offset > 0) url += `&offset=${offset}`;
+
     try {
-        const response = await fetch(`${GAS_WEB_APP_URL}?page=${view}`);
+        const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         if (data.error) throw new Error(data.error);
 
         if (view === 'kinerja') {
-            localData = data;
-            if (!isBackground && activeView === 'kinerja') {
+            if (offset > 0) {
+                // Ini adalah data sisa, gabungkan dengan yang sudah ada
+                localData = [...localData, ...data];
+            } else {
+                // Ini adalah pemuatan awal atau pemuatan penuh
+                localData = data;
+            }
+             if (activeView === 'kinerja') {
                 populateFilters();
-                currentPage = 1;
                 applyAndRenderFilters();
             }
         } else if (view === 'skp') {
             skpData = data;
-            if (activeView === 'skp') { // Render jika pengguna sudah di halaman SKP
+            if (activeView === 'skp') {
                 renderSkpData(skpData);
             }
         }
@@ -112,12 +127,14 @@ async function fetchData(view, isBackground = false) {
         if (!isBackground) showError(error.message);
         else console.error(`Gagal memuat data ${view} di latar belakang:`, error);
     } finally {
-        isDataLoading[view] = false;
+        if (view === 'kinerja') isDataLoading.kinerja = false;
+        if (view === 'skp') isDataLoading.skp = false;
         if (!isBackground) {
             hideLoading();
         }
     }
 }
+
 
 function toggleSidebar() {
     if (window.innerWidth < 768) {
@@ -179,7 +196,8 @@ function handleBodyClick(e) {
     const id = itemElement.getAttribute('data-id');
 
     if (activeView === 'kinerja') {
-        if (target.closest('.edit-btn')) openEditForm(id);
+        if (target.closest('.copy-btn')) copyDescription(id);
+        else if (target.closest('.edit-btn')) openEditForm(id);
         else if (target.closest('.delete-btn')) openDeleteModal(id);
         else if (target.closest('.pin-btn')) togglePin(id);
         else if (target.closest('.data-cell')) showDetailView(id);
@@ -290,6 +308,7 @@ function createTableRow(item) {
         <td class="px-6 py-4 whitespace-nowrap data-cell">${getStatusBadge(item.Status)}</td>
         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-right">
             <div class="flex items-center justify-end gap-1">
+                <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition copy-btn" title="Salin Deskripsi"><i data-lucide="copy" class="w-5 h-5"></i></button>
                 <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition pin-btn" title="Sematkan">${pinIcon}</button>
                 <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn" title="Ubah"><i data-lucide="pencil" class="w-5 h-5"></i></button>
                 <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn" title="Hapus"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
@@ -317,6 +336,7 @@ function createCardView(item) {
                 ${getStatusBadge(item.Status)}
             </div>
             <div class="flex items-center">
+                 <button class="p-2 rounded-full hover:bg-black/5 text-gray-500 hover:text-gray-800 transition copy-btn" title="Salin Deskripsi"><i data-lucide="copy" class="w-5 h-5"></i></button>
                  <button class="p-2 rounded-full hover:bg-black/5 text-gray-500 hover:text-gray-800 transition pin-btn" title="Sematkan">${pinIcon}</button>
                  <button class="p-2 rounded-full hover:bg-black/5 text-gray-500 hover:text-gray-800 transition edit-btn" title="Ubah"><i data-lucide="pencil" class="w-5 h-5"></i></button>
                  <button class="p-2 rounded-full hover:bg-black/5 text-gray-500 hover:text-red-600 transition delete-btn" title="Hapus"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
@@ -573,6 +593,29 @@ function updateLocalData(savedData) {
     }
     applyAndRenderFilters();
 }
+
+function copyDescription(id) {
+    const item = localData.find(d => d['ID Kinerja'] === id);
+    if (!item || !item.Deskripsi) return;
+
+    const textarea = document.createElement('textarea');
+    textarea.value = item.Deskripsi;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+
+    showToast("Deskripsi disalin!");
+}
+
+function showToast(message) {
+    toastNotification.textContent = message;
+    toastNotification.classList.add('show');
+    setTimeout(() => {
+        toastNotification.classList.remove('show');
+    }, 2000);
+}
+
 
 function renderStatusButtons() {
     statusContainer.innerHTML = '';
@@ -896,6 +939,7 @@ document.addEventListener('DOMContentLoaded', () => {
     colorContainer = document.getElementById('color-container');
     warnaInput = document.getElementById('warna-input');
     resetFilterButtonMobile = document.getElementById('reset-filter-button-mobile');
+    toastNotification = document.getElementById('toast-notification');
 
     // Lanjutkan dengan sisa inisialisasi
     lucide.createIcons();
