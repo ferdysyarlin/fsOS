@@ -633,7 +633,12 @@ function showError(message) {
 }
 
 function populateFilters() {
-    const years = [...new Set(localData.map(item => item.Tanggal.split('/')[2]))].sort((a,b) => b-a);
+    const years = [...new Set(
+        localData
+            .filter(item => item && typeof item.Tanggal === 'string' && item.Tanggal.includes('/'))
+            .map(item => item.Tanggal.split('/')[2])
+    )].sort((a, b) => b - a);
+
     const yearOptions = '<option value="">Semua Tahun</option>' + years.map(year => `<option value="${year}">${year}</option>`).join('');
     yearFilter.innerHTML = yearOptions;
     yearFilterMobile.innerHTML = yearOptions;
@@ -654,12 +659,35 @@ function applyAndRenderFilters() {
     const year = yearFilter.value;
     
     let filteredData = localData.filter(item => {
-        const [, itemMonth, itemYear] = item.Tanggal.split('/');
+        // Pengecekan dasar untuk memastikan item valid
+        if (!item) return false;
+
         const searchMatch = !searchTerm || (item.Deskripsi && item.Deskripsi.toLowerCase().includes(searchTerm));
         const statusMatch = !status || item.Status === status;
-        const monthMatch = !month || itemMonth === month;
-        const yearMatch = !year || itemYear === year;
-        return searchMatch && statusMatch && monthMatch && yearMatch;
+
+        // Jika tidak cocok dengan filter non-tanggal, langsung kecualikan
+        if (!searchMatch || !statusMatch) {
+            return false;
+        }
+
+        // Pengecekan tanggal yang aman
+        const hasDate = typeof item.Tanggal === 'string' && item.Tanggal.includes('/');
+
+        // Jika filter tanggal tidak aktif, maka item lolos
+        if (!month && !year) {
+            return true;
+        }
+
+        // Jika filter tanggal aktif, item harus punya tanggal yang valid
+        if (hasDate) {
+            const [, itemMonth, itemYear] = item.Tanggal.split('/');
+            const monthMatch = !month || itemMonth === month;
+            const yearMatch = !year || itemYear === year;
+            return monthMatch && yearMatch;
+        }
+
+        // Jika filter tanggal aktif tapi item tidak punya tanggal, kecualikan
+        return false;
     });
 
     filteredData.sort((a, b) => {
