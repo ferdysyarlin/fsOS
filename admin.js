@@ -95,12 +95,7 @@ async function fetchData(view, isBackground = false) {
         if (data.error) throw new Error(data.error);
 
         if (view === 'kinerja') {
-             localData = data.sort((a, b) => {
-                // Handle cases where Tanggal might be missing or invalid
-                const dateA = a.Tanggal ? new Date(a.Tanggal.split('/').reverse().join('-')) : new Date(0);
-                const dateB = b.Tanggal ? new Date(b.Tanggal.split('/').reverse().join('-')) : new Date(0);
-                return dateB - dateA;
-            });
+            localData = data; // Data tidak diurutkan di sini, pengurutan terpusat di applyAndRenderFilters
             if (!isBackground && activeView === 'kinerja') {
                 populateFilters();
                 currentPage = 1;
@@ -224,7 +219,7 @@ function renderData(dataToRender) {
 }
 
 function renderPagination(totalItems) {
-    if (!paginationContainer) return; // Guard clause to prevent error
+    if (!paginationContainer) return; 
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
     paginationContainer.innerHTML = '';
 
@@ -240,7 +235,7 @@ function renderPagination(totalItems) {
     }
     paginationHTML += `</div>`;
     paginationHTML += `<div class="hidden md:-mt-px md:flex">`;
-    // Logic for showing limited page numbers
+    
     let startPage = Math.max(1, currentPage - 2);
     let endPage = Math.min(totalPages, currentPage + 2);
 
@@ -700,30 +695,31 @@ function populateFilters() {
 }
 
 function applyAndRenderFilters() {
-    const searchTerm = (searchInput.value || searchInputMobile.value).toLowerCase();
-    const status = statusFilter.value;
-    const month = monthFilter.value;
-    const year = yearFilter.value;
     let filteredData = localData.filter(item => {
         if (!item) return false;
-        const searchMatch = !searchTerm || (item.Deskripsi && item.Deskripsi.toLowerCase().includes(searchTerm));
-        const statusMatch = !status || item.Status === status;
+        // Robust search: ensure item.Deskripsi is a string
+        const searchMatch = !searchInput.value || (item.Deskripsi && typeof item.Deskripsi === 'string' && item.Deskripsi.toLowerCase().includes(searchInput.value.toLowerCase()));
+        const statusMatch = !statusFilter.value || item.Status === statusFilter.value;
         if (!searchMatch || !statusMatch) return false;
+        
         const hasDate = typeof item.Tanggal === 'string' && item.Tanggal.includes('/');
-        if (!month && !year) return true;
+        if (!monthFilter.value && !yearFilter.value) return true;
+        
         if (hasDate) {
             const [, itemMonth, itemYear] = item.Tanggal.split('/');
-            const monthMatch = !month || itemMonth === month;
-            const yearMatch = !year || itemYear === year;
+            const monthMatch = !monthFilter.value || itemMonth === monthFilter.value;
+            const yearMatch = !yearFilter.value || itemYear === yearFilter.value;
             return monthMatch && yearMatch;
         }
         return false;
     });
+
+    // Centralized sorting logic
     filteredData.sort((a, b) => {
         const pinA = a.Pin === true || a.Pin === 'TRUE' ? 1 : 0;
         const pinB = b.Pin === true || b.Pin === 'TRUE' ? 1 : 0;
         if (pinB !== pinA) return pinB - pinA;
-        // Secondary sort by date if pin status is the same
+        
         const dateA = a.Tanggal ? new Date(a.Tanggal.split('/').reverse().join('-')) : new Date(0);
         const dateB = b.Tanggal ? new Date(b.Tanggal.split('/').reverse().join('-')) : new Date(0);
         return dateB - dateA;
