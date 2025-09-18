@@ -392,18 +392,18 @@ function executeDelete() {
 }
 
 async function sendDataToServer(data) {
-    // *** PERBAIKAN CORS ***
     const response = await fetch(GAS_WEB_APP_URL, {
         method: 'POST', 
         redirect: "follow", 
         body: JSON.stringify(data),
-        headers: { 
-            "Content-Type": "text/plain;charset=utf-8" 
-        }
+        headers: { "Content-Type": "text/plain;charset=utf-8" }
     });
-    if (!response.ok) throw new Error('Network response was not ok.');
+    if (!response.ok) {
+        throw new Error(`Network response was not ok. Status: ${response.status}`);
+    }
     return response.json();
 }
+
 
 function updateLocalData(savedData) {
     const index = localData.findIndex(item => item['ID Kinerja'] === savedData['ID Kinerja']);
