@@ -6,6 +6,8 @@
     <title>fsOS Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Pustaka Grafik -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,8 +18,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="fsOS">
-    <link rel="apple-touch-icon" href="/icons/icon-192.png"> <!-- Ganti dengan path ikon Anda -->
-    <link rel="icon" href="/favicon.ico" type="image/x-icon"> <!-- Ganti dengan path ikon Anda -->
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
 
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -81,7 +83,7 @@
             <!-- Konten dari dashboard.html, kinerja.html, atau skp.html akan dimuat di sini -->
         </main>
 
-        <!-- Tombol Tambah (Floating Action Button) - Dipindahkan ke sini -->
+        <!-- Tombol Tambah (Floating Action Button) -->
         <button id="add-data-button" class="hidden fixed bottom-8 right-8 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 flex items-center justify-center transition z-30">
             <i data-lucide="plus" class="w-7 h-7"></i>
         </button>
