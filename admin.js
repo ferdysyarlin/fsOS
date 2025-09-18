@@ -178,11 +178,9 @@ async function fetchData(view, isBackground = false) {
 
 function toggleSidebar() {
     if (window.innerWidth < 768) {
-        // Mobile behavior: open as overlay
         sidebar.classList.remove('-translate-x-full');
         sidebarOverlay.classList.remove('hidden');
     } else {
-        // Desktop behavior: toggle collapsed state
         body.classList.toggle('sidebar-collapsed');
     }
 }
@@ -191,7 +189,6 @@ function closeMobileSidebar() {
     sidebar.classList.add('-translate-x-full');
     sidebarOverlay.classList.add('hidden');
 }
-
 
 // --- FUNGSI DETAIL VIEW ---
 
@@ -450,28 +447,51 @@ async function handleFormSubmit(e) {
     e.preventDefault();
     submitButton.disabled = true;
     submitButton.textContent = 'Menyimpan...';
-    const data = Object.fromEntries(new FormData(form).entries());
-    data.files = fileData;
-    data.action = currentlyEditingId ? 'update' : 'create';
     
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Optimistic UI Update for Edit/Create
+    const optimisticData = { 
+        ...data,
+        Tanggal: data.Tanggal.split('-').reverse().join('/'),
+        File: '[]', // Placeholder, will be updated from server
+        Pin: false 
+    };
+
+    if (currentlyEditingId) {
+        // For Edit: find existing data to merge
+        const existingItem = localData.find(item => item['ID Kinerja'] === currentlyEditingId);
+        if (existingItem) {
+            optimisticData.File = existingItem.File; // Keep old files until server confirms
+            optimisticData.Pin = existingItem.Pin;
+        }
+    }
+    
+    updateLocalData(optimisticData);
     closeFormModal();
+    
+    // Add file data for server submission
+    data.files = fileData; 
+    data.action = currentlyEditingId ? 'update' : 'create';
+
     try {
         const response = await sendDataToServer(data);
         if (response.status === 'success') {
-            // Optimistically update UI then fetch fresh data to sync
+            // Sync with server authoritative response
             updateLocalData(response.savedData);
-            await fetchData('kinerja', true); // Fetch new data in background
         } else {
             throw new Error(response.message || 'Gagal menyimpan data.');
         }
     } catch (error) {
         showError(error.message);
-        fetchData('kinerja'); // Re-fetch to sync with server on error
+        fetchData('kinerja'); // Re-fetch all data on error to ensure consistency
     } finally {
         submitButton.disabled = false;
         submitButton.textContent = 'Simpan Kinerja';
     }
 }
+
 
 function openDeleteModal(id) {
     confirmDeleteButton.setAttribute('data-id', id);
@@ -481,10 +501,27 @@ function openDeleteModal(id) {
 function executeDelete() {
     const id = confirmDeleteButton.getAttribute('data-id');
     if (!id) return;
+
+    const itemIndex = localData.findIndex(item => item['ID Kinerja'] === id);
+    if (itemIndex === -1) return;
+
+    // 1. Back up the item in case of failure
+    const deletedItem = localData[itemIndex];
+
+    // 2. Optimistically remove from local data and update UI
+    localData.splice(itemIndex, 1);
+    applyAndRenderFilters();
     deleteModalOverlay.classList.add('hidden');
+    if (activeDetailId === id) hideDetailView();
+
+    // 3. Send request to server in the background
     sendDataToServer({ 'ID Kinerja': id, action: 'delete' })
-        .then(() => fetchData('kinerja', true)) // Refresh in background on success
-        .catch(error => showError(`Gagal menghapus: ${error.message}`));
+        .catch(error => {
+            // 4. If it fails, revert the change and show an error
+            showError(`Gagal menghapus data: ${error.message}. Mengembalikan data.`);
+            localData.splice(itemIndex, 0, deletedItem); // Re-insert at original position
+            applyAndRenderFilters();
+        });
 }
 
 async function sendDataToServer(data) {
@@ -497,7 +534,7 @@ async function sendDataToServer(data) {
 }
 
 function updateLocalData(savedData) {
-    const index = localData.findIndex(item => item['ID Kinerja'] === savedData['ID Kinerja']);
+    const index = localData.findIndex(item => item && item['ID Kinerja'] === savedData['ID Kinerja']);
     if (index !== -1) {
         localData[index] = savedData;
     } else {
@@ -734,24 +771,29 @@ function setActiveColor(activeColor) {
     });
 }
 
-async function togglePin(id) {
+function togglePin(id) {
     const itemIndex = localData.findIndex(d => d && d['ID Kinerja'] === id);
     if (itemIndex === -1) return;
+
     const item = localData[itemIndex];
-    const newPinStatus = !(item.Pin === true || item.Pin === 'TRUE');
+    const originalPinStatus = item.Pin;
+    const newPinStatus = !(originalPinStatus === true || originalPinStatus === 'TRUE');
+
+    // 1. Optimistically update local data and UI
+    localData[itemIndex].Pin = newPinStatus;
+    applyAndRenderFilters();
+
+    // 2. Send request to server
     const dataToUpdate = { ...item, Pin: newPinStatus, action: 'update', files: [] };
-    const pinButton = document.querySelector(`[data-id="${id}"] .pin-btn`);
-    if (pinButton) pinButton.disabled = true;
-    try {
-        await sendDataToServer(dataToUpdate);
-        localData[itemIndex].Pin = newPinStatus;
-        applyAndRenderFilters();
-    } catch (error) {
-        showError(`Gagal menyimpan status pin: ${error.message}`);
-    } finally {
-        if (pinButton) pinButton.disabled = false;
-    }
+    sendDataToServer(dataToUpdate)
+        .catch(error => {
+            // 3. If it fails, revert the change and show an error
+            showError(`Gagal menyematkan: ${error.message}. Mengembalikan.`);
+            localData[itemIndex].Pin = originalPinStatus;
+            applyAndRenderFilters();
+        });
 }
+
 
 // --- EVENT LISTENERS ---
 document.addEventListener('DOMContentLoaded', () => {
