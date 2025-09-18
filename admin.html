@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; transition: padding-left 0.3s ease-in-out; }
+        body { font-family: 'Inter', sans-serif; }
         .shake { animation: shake 0.5s; }
         @keyframes shake {
             0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); }
@@ -22,22 +22,28 @@
             transform: scale(1.1);
             box-shadow: 0 0 0 2px white, 0 0 0 4px var(--ring-color);
         }
-        /* Sidebar Styles */
-        .sidebar { transition: width 0.3s ease-in-out; }
-        .sidebar .nav-text { transition: opacity 0.2s, visibility 0.2s; }
         
-        /* Collapsed State */
-        .sidebar-collapsed .sidebar { width: 5rem; /* w-20 */ }
-        .sidebar-collapsed .sidebar .nav-text { opacity: 0; visibility: hidden; }
-        .sidebar-collapsed .sidebar .nav-link { justify-content: center; }
-        .sidebar-collapsed .sidebar .sidebar-header { justify-content: center; }
-        .sidebar-collapsed .sidebar .sidebar-header .app-title { display: none; }
-        .sidebar-collapsed .main-content { padding-left: 5rem; }
+        /* --- Sidebar Base & Transition Styles --- */
+        .sidebar { transition: width 0.3s ease-in-out, transform 0.3s ease-in-out; }
+        .sidebar .nav-text { transition: opacity 0.2s, visibility 0.2s; white-space: nowrap; }
+        .main-content { transition: padding-left 0.3s ease-in-out; }
 
+        /* --- Desktop Styles (md and up) --- */
         @media (min-width: 768px) {
-            .main-content { padding-left: 16rem; /* w-64 */ }
+            .main-content { padding-left: 16rem; /* w-64 default */ }
+            .sidebar-collapsed .sidebar { width: 4.5rem; /* w-18 */ }
+            .sidebar-collapsed .main-content { padding-left: 4.5rem; }
+            .sidebar-collapsed .sidebar .nav-text { opacity: 0; visibility: hidden; pointer-events: none; }
+            .sidebar-collapsed .sidebar .nav-link { justify-content: center; }
+            .sidebar-collapsed .sidebar .sidebar-header-content { justify-content: center; }
+            .sidebar-collapsed .sidebar .app-title { display: none; }
+            .sidebar-collapsed .sidebar .placeholder-logo { display: block; }
         }
 
+        /* --- Mobile Styles (below md) --- */
+        @media (max-width: 767px) {
+            .sidebar { transform: translateX(-100%); }
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 sidebar-collapsed">
@@ -58,9 +64,15 @@
 
     <!-- Konten Utama -->
     <div id="main-container" class="hidden">
-        <aside id="sidebar" class="sidebar fixed top-0 left-0 w-64 h-full bg-white border-r transition-transform duration-300 md:translate-x-0 z-40">
+        <!-- Sidebar Overlay for Mobile -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black/30 z-30 hidden md:hidden"></div>
+        
+        <aside id="sidebar" class="sidebar fixed top-0 left-0 w-64 h-full bg-white border-r -translate-x-full md:translate-x-0 z-40">
             <div class="sidebar-header flex items-center justify-between p-4 h-16 border-b">
-                <h1 class="app-title text-xl font-bold text-gray-900">fsOS</h1>
+                <div class="sidebar-header-content flex items-center gap-2 overflow-hidden">
+                     <i data-lucide="layers" class="placeholder-logo hidden w-6 h-6 text-indigo-600 flex-shrink-0"></i>
+                     <h1 class="app-title text-xl font-bold text-gray-900">fsOS</h1>
+                </div>
                 <button id="close-sidebar-button" class="md:hidden p-1 rounded-full hover:bg-gray-100"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <nav class="p-4 space-y-2">
@@ -87,9 +99,7 @@
                 </div>
             </header>
             
-            <!-- Filter Bar (Full Width) -->
-            <div id="filter-bar" class="px-4 sm:px-6 lg:px-8 pt-4">
-                 <!-- VIEW KINERJA FILTERS -->
+            <div id="filter-bar" class="bg-white border-b px-4 sm:px-6 lg:px-8 py-3">
                 <div id="kinerja-view-filters" class="space-y-4">
                     <div class="hidden md:flex items-center gap-2">
                         <input type="search" id="search-input" placeholder="Cari deskripsi..." class="flex-grow md:flex-grow-0 md:w-48 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm">
@@ -114,7 +124,6 @@
                         <p id="error-message" class="text-red-600 text-sm"></p>
                     </div>
 
-                    <!-- VIEW KINERJA -->
                     <div id="kinerja-view" class="space-y-4">
                         <div class="hidden sm:block bg-white rounded-xl shadow-sm overflow-hidden">
                             <table id="kinerja-table" class="min-w-full divide-y divide-gray-200">
@@ -133,7 +142,6 @@
                         <div id="kinerja-card-container" class="sm:hidden grid grid-cols-1 gap-4"></div>
                     </div>
 
-                    <!-- VIEW SKP -->
                     <div id="skp-view" class="hidden">
                         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
                             <table class="min-w-full divide-y divide-gray-200">
@@ -161,62 +169,25 @@
         </div>
     </div>
 
-    <!-- Floating Action Button -->
     <button id="add-data-button" class="hidden fixed bottom-8 right-8 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 flex items-center justify-center transition z-30"><i data-lucide="plus" class="w-7 h-7"></i></button>
 
-    <!-- Modal Form Tambah/Edit -->
     <div id="form-modal-overlay" class="hidden fixed inset-0 bg-black/30 z-40 flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 space-y-4 transform transition-transform duration-300 scale-95" onclick="event.stopPropagation()">
             <form id="kinerja-form" class="space-y-4">
-                <input type="hidden" id="id-kinerja" name="ID Kinerja">
-                <input type="date" id="tanggal" name="Tanggal" required class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Tanggal">
-                <textarea id="deskripsi" name="Deskripsi" rows="4" required class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Deskripsi Kinerja..."></textarea>
-                <div id="status-container" class="flex flex-wrap gap-2"></div>
-                <input type="hidden" id="status-input" name="Status" required>
-                <div>
-                    <input type="hidden" id="warna-input" name="Warna">
-                    <div id="color-container" class="flex items-center gap-3 pt-2"></div>
-                </div>
-                <div>
-                    <input type="file" id="file-input" class="hidden" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx">
-                    <label for="file-input" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"><i data-lucide="upload" class="w-4 h-4"></i><span id="file-name">Pilih hingga 5 file (opsional)</span></label>
-                    <p id="file-lama" class="text-xs text-gray-500 mt-1"></p>
-                </div>
-                <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" id="close-form-modal" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200">Batal</button>
-                    <button type="submit" id="submit-button" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700">Simpan Kinerja</button>
-                </div>
+                <input type="hidden" id="id-kinerja" name="ID Kinerja"><input type="date" id="tanggal" name="Tanggal" required class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Tanggal"><textarea id="deskripsi" name="Deskripsi" rows="4" required class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500" placeholder="Deskripsi Kinerja..."></textarea><div id="status-container" class="flex flex-wrap gap-2"></div><input type="hidden" id="status-input" name="Status" required><div><input type="hidden" id="warna-input" name="Warna"><div id="color-container" class="flex items-center gap-3 pt-2"></div></div><div><input type="file" id="file-input" class="hidden" multiple accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"><label for="file-input" class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"><i data-lucide="upload" class="w-4 h-4"></i><span id="file-name">Pilih hingga 5 file (opsional)</span></label><p id="file-lama" class="text-xs text-gray-500 mt-1"></p></div><div class="flex justify-end gap-3 pt-4"><button type="button" id="close-form-modal" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200">Batal</button><button type="submit" id="submit-button" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700">Simpan Kinerja</button></div>
             </form>
         </div>
     </div>
 
-    <!-- Modal Konfirmasi Hapus -->
     <div id="delete-modal-overlay" class="hidden fixed inset-0 bg-black/30 z-40 flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 text-center" onclick="event.stopPropagation()">
-            <h3 class="text-lg font-semibold text-gray-900">Hapus Data?</h3>
-            <p class="mt-2 text-sm text-gray-600">Apakah Anda yakin ingin menghapus data kinerja ini? Tindakan ini tidak dapat dibatalkan.</p>
-            <div class="mt-6 flex justify-center gap-3">
-                <button type="button" id="cancel-delete-button" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200">Batal</button>
-                <button type="button" id="confirm-delete-button" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700">Ya, Hapus</button>
-            </div>
+            <h3 class="text-lg font-semibold text-gray-900">Hapus Data?</h3><p class="mt-2 text-sm text-gray-600">Apakah Anda yakin ingin menghapus data kinerja ini? Tindakan ini tidak dapat dibatalkan.</p><div class="mt-6 flex justify-center gap-3"><button type="button" id="cancel-delete-button" class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200">Batal</button><button type="button" id="confirm-delete-button" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700">Ya, Hapus</button></div>
         </div>
     </div>
     
-    <!-- Modal Filter Mobile -->
     <div id="mobile-filter-modal" class="hidden fixed inset-0 bg-black/30 z-40 flex items-end">
         <div class="bg-white rounded-t-xl shadow-xl w-full p-6 space-y-4" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center">
-                 <h3 class="text-lg font-semibold text-gray-900">Filter Data</h3>
-                 <button id="close-mobile-filter-button" class="p-2 -mr-2 rounded-full hover:bg-gray-100"><i data-lucide="x"></i></button>
-            </div>
-            <div class="space-y-4">
-                <select id="status-filter-mobile" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select>
-                <select id="month-filter-mobile" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select>
-                <select id="year-filter-mobile" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select>
-            </div>
-             <div class="flex justify-end gap-3 pt-4">
-                <button type="button" id="apply-mobile-filter-button" class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700">Terapkan Filter</button>
-            </div>
+            <div class="flex justify-between items-center"><h3 class="text-lg font-semibold text-gray-900">Filter Data</h3><button id="close-mobile-filter-button" class="p-2 -mr-2 rounded-full hover:bg-gray-100"><i data-lucide="x"></i></button></div><div class="space-y-4"><select id="status-filter-mobile" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select><select id="month-filter-mobile" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select><select id="year-filter-mobile" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select></div><div class="flex justify-end gap-3 pt-4"><button type="button" id="apply-mobile-filter-button" class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700">Terapkan Filter</button></div>
         </div>
     </div>
 
