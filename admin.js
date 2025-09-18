@@ -9,6 +9,7 @@ let fileData = [];
 let currentlyEditingId = null;
 let activeDetailId = null;
 let activeView = 'kinerja'; // 'kinerja' atau 'skp'
+let isDataLoading = { kinerja: false, skp: false };
 const statusOptions = ['Hadir', 'Lembur', 'Cuti', 'Dinas', 'Sakit', 'ST'];
 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
@@ -22,6 +23,7 @@ const colorClasses = {
 };
 
 // --- Elemen DOM ---
+const body = document.body;
 const pinModalOverlay = document.getElementById('pin-modal-overlay');
 const pinForm = document.getElementById('pin-form');
 const pinInput = document.getElementById('pin-input');
@@ -36,22 +38,20 @@ const detailView = document.getElementById('detail-view');
 const detailContent = document.getElementById('detail-content');
 const pageTitle = document.getElementById('page-title');
 
-// Elemen Navigasi
+// Elemen Navigasi & Sidebar
 const sidebar = document.getElementById('sidebar');
-const sidebarOverlay = document.getElementById('sidebar-overlay');
 const hamburgerButton = document.getElementById('hamburger-button');
-const closeSidebarButton = document.getElementById('close-sidebar-button');
 const navKinerja = document.getElementById('nav-kinerja');
 const navSkp = document.getElementById('nav-skp');
 
-// Elemen View Kinerja
+// Elemen View
 const kinerjaView = document.getElementById('kinerja-view');
 const tableBody = document.getElementById('kinerja-table-body');
 const cardContainer = document.getElementById('kinerja-card-container');
-
-// Elemen View SKP
 const skpView = document.getElementById('skp-view');
 const skpTableBody = document.getElementById('skp-table-body');
+const filterBar = document.getElementById('filter-bar');
+
 
 // Elemen Form & Modal
 const formModalOverlay = document.getElementById('form-modal-overlay');
@@ -87,16 +87,23 @@ const colorContainer = document.getElementById('color-container');
 const warnaInput = document.getElementById('warna-input');
 const resetFilterButtonMobile = document.getElementById('reset-filter-button-mobile');
 
-// --- FUNGSI UTAMA & MANAJENEN TAMPILAN ---
+// --- FUNGSI UTAMA & MANAJEMEN APLIKASI ---
+
+async function initializeApp() {
+    // 1. Prioritaskan fetch data Kinerja dan tampilkan loading
+    await fetchData('kinerja', false); // false = jangan di latar belakang
+    // 2. Setelah Kinerja selesai, fetch data SKP secara diam-diam
+    fetchData('skp', true); // true = di latar belakang
+}
 
 function handlePinSubmit(e) {
     e.preventDefault();
-    const pinModalContent = pinModalOverlay.querySelector('div');
     if (pinInput.value === CORRECT_PIN) {
         pinModalOverlay.classList.add('opacity-0', 'pointer-events-none');
         mainContainer.classList.remove('hidden');
-        switchView('kinerja'); // Memulai dengan view kinerja
+        initializeApp(); // Panggil fungsi inisialisasi baru
     } else {
+        const pinModalContent = pinModalOverlay.querySelector('div');
         pinError.textContent = 'PIN salah, coba lagi.';
         pinModalContent.classList.add('shake');
         pinInput.value = '';
@@ -106,59 +113,76 @@ function handlePinSubmit(e) {
 }
 
 function switchView(viewName) {
+    if (activeView === viewName) return; // Jangan lakukan apa-apa jika view sudah aktif
     activeView = viewName;
-    hideDetailView(); // Selalu tutup detail view saat berganti halaman
+    hideDetailView();
 
     const isKinerjaView = viewName === 'kinerja';
 
-    // Atur visibilitas view utama
+    // Atur visibilitas view utama dan UI terkait
     kinerjaView.classList.toggle('hidden', !isKinerjaView);
     skpView.classList.toggle('hidden', isKinerjaView);
-
-    // Atur Tombol Tambah
+    filterBar.classList.toggle('hidden', !isKinerjaView);
     addDataButton.classList.toggle('hidden', !isKinerjaView);
+    pageTitle.textContent = isKinerjaView ? 'Kinerja' : 'SKP';
 
-    // Tampilkan view yang dipilih dan update UI
-    if (viewName === 'kinerja') {
-        pageTitle.textContent = 'Kinerja';
-        navKinerja.classList.add('active');
-        navSkp.classList.remove('active');
-        fetchData();
-    } else if (viewName === 'skp') {
-        pageTitle.textContent = 'SKP';
-        navSkp.classList.add('active');
-        navKinerja.classList.remove('active');
-        fetchData();
-    }
-    
-    // Tutup sidebar di mobile setelah memilih menu
-    if (window.innerWidth < 768) {
-        closeSidebar();
+    // Atur status aktif pada navigasi
+    navKinerja.classList.toggle('active', isKinerjaView);
+    navSkp.classList.toggle('active', !isKinerjaView);
+
+    // Render data dari variabel yang sudah ada, jangan fetch lagi
+    if (isKinerjaView) {
+        if (localData.length > 0) applyAndRenderFilters();
+    } else {
+        if (skpData.length > 0) renderSkpData(skpData);
+        else if (isDataLoading.skp) { // Tampilkan loading kecil jika data skp masih diambil
+            skpTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">Memuat data SKP...</td></tr>`;
+        }
     }
 }
 
-async function fetchData() {
-    showLoading();
+async function fetchData(view, isBackground = false) {
+    isDataLoading[view] = true;
+    if (!isBackground) {
+        showLoading();
+    }
+
     try {
-        const response = await fetch(`${GAS_WEB_APP_URL}?page=${activeView}`);
+        const response = await fetch(`${GAS_WEB_APP_URL}?page=${view}`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         if (data.error) throw new Error(data.error);
 
-        if (activeView === 'kinerja') {
+        if (view === 'kinerja') {
             localData = data;
-            populateFilters();
-            applyAndRenderFilters();
-        } else if (activeView === 'skp') {
+            // Hanya render jika ini bukan pemuatan latar belakang DAN view kinerja sedang aktif
+            if (!isBackground && activeView === 'kinerja') {
+                populateFilters();
+                applyAndRenderFilters();
+            }
+        } else if (view === 'skp') {
             skpData = data;
-            renderSkpData(skpData);
+             // Hanya render jika ini bukan pemuatan latar belakang DAN view skp sedang aktif
+            if (!isBackground && activeView === 'skp') {
+                renderSkpData(skpData);
+            }
         }
     } catch (error) {
-        showError(error.message);
+        if (!isBackground) showError(error.message);
+        else console.error(`Gagal memuat data ${view} di latar belakang:`, error);
     } finally {
-        hideLoading();
+        isDataLoading[view] = false;
+        if (!isBackground) {
+            hideLoading();
+        }
     }
 }
+
+function toggleSidebar() {
+    body.classList.toggle('sidebar-collapsed');
+}
+
+// --- FUNGSI DETAIL VIEW ---
 
 function showDetailView(id) {
     let itemData;
@@ -203,16 +227,12 @@ function handleBodyClick(e) {
     if (!itemElement) return;
     const id = itemElement.getAttribute('data-id');
 
-    // Logika spesifik untuk Kinerja
     if (activeView === 'kinerja') {
         if (target.closest('.edit-btn')) openEditForm(id);
         else if (target.closest('.delete-btn')) openDeleteModal(id);
         else if (target.closest('.pin-btn')) togglePin(id);
         else if (target.closest('.data-cell')) showDetailView(id);
-    }
-    // Logika spesifik untuk SKP
-    else if (activeView === 'skp') {
-        // Klik di manapun pada baris SKP akan membuka detail
+    } else if (activeView === 'skp') {
         showDetailView(id);
     }
 }
@@ -294,7 +314,7 @@ function createCardView(item) {
 
 function renderSkpData(dataToRender) {
     skpTableBody.innerHTML = '';
-    if (dataToRender.length === 0) {
+    if (!dataToRender || dataToRender.length === 0) {
         skpTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">Tidak ada data SKP.</td></tr>`;
         return;
     }
@@ -303,9 +323,7 @@ function renderSkpData(dataToRender) {
         const uniqueId = item['Tahun'] + item['Atasan'];
         row.className = 'hover:bg-gray-50 cursor-pointer';
         row.setAttribute('data-id', uniqueId);
-
         const { predikatClass, nilaiClass } = getSkpColor(item.Predikat);
-
         row.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.Tahun}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${item.Atasan}</td>
@@ -316,8 +334,7 @@ function renderSkpData(dataToRender) {
                     <i data-lucide="eye" class="w-4 h-4"></i>
                     Lihat
                 </button>
-            </td>
-        `;
+            </td>`;
         skpTableBody.appendChild(row);
     });
     lucide.createIcons();
@@ -426,22 +443,19 @@ async function handleFormSubmit(e) {
     data.files = fileData;
     data.action = currentlyEditingId ? 'update' : 'create';
     
-    if (data.action === 'create') {
-        const optimisticData = { ...data, Tanggal: data.Tanggal.split('-').reverse().join('/'), File: '[]', Pin: false, Warna: data.Warna };
-        localData.unshift(optimisticData);
-        applyAndRenderFilters();
-    }
     closeFormModal();
     try {
         const response = await sendDataToServer(data);
         if (response.status === 'success') {
+            // Optimistically update UI then fetch fresh data to sync
             updateLocalData(response.savedData);
+            await fetchData('kinerja', true); // Fetch new data in background
         } else {
             throw new Error(response.message || 'Gagal menyimpan data.');
         }
     } catch (error) {
         showError(error.message);
-        fetchData(); // Re-fetch to sync with server on error
+        fetchData('kinerja'); // Re-fetch to sync with server on error
     } finally {
         submitButton.disabled = false;
         submitButton.textContent = 'Simpan Kinerja';
@@ -456,18 +470,10 @@ function openDeleteModal(id) {
 function executeDelete() {
     const id = confirmDeleteButton.getAttribute('data-id');
     if (!id) return;
-
-    const originalData = [...localData];
-    localData = localData.filter(item => item['ID Kinerja'] !== id);
-    applyAndRenderFilters();
     deleteModalOverlay.classList.add('hidden');
-
     sendDataToServer({ 'ID Kinerja': id, action: 'delete' })
-        .catch(error => {
-            showError(`Gagal menghapus: ${error.message}`);
-            localData = originalData; // Revert on error
-            applyAndRenderFilters();
-        });
+        .then(() => fetchData('kinerja', true)) // Refresh in background on success
+        .catch(error => showError(`Gagal menghapus: ${error.message}`));
 }
 
 async function sendDataToServer(data) {
@@ -607,14 +613,13 @@ function getStatusColor(status) {
 function showLoading() {
     loadingDiv.innerHTML = '<p class="text-gray-500">Memuat data...</p>';
     loadingDiv.style.display = 'block';
+    errorDiv.classList.add('hidden');
     kinerjaView.classList.add('hidden');
     skpView.classList.add('hidden');
-    errorDiv.classList.add('hidden');
 }
 
 function hideLoading() {
     loadingDiv.style.display = 'none';
-    // Perbaikan: Tampilkan view yang sesuai setelah loading selesai
     if (activeView === 'kinerja') {
         kinerjaView.classList.remove('hidden');
     } else if (activeView === 'skp') {
@@ -626,29 +631,19 @@ function showError(message) {
     hideLoading();
     errorDiv.classList.remove('hidden');
     errorMessageP.textContent = message;
-    // Tampilkan view yang seharusnya aktif saat terjadi error
-    if (activeView === 'kinerja') {
-        kinerjaView.classList.remove('hidden');
-    } else {
-        skpView.classList.remove('hidden');
-    }
 }
 
 function populateFilters() {
     const years = [...new Set(
-        localData
-            .filter(item => item && typeof item.Tanggal === 'string' && item.Tanggal.includes('/'))
+        localData.filter(item => item && typeof item.Tanggal === 'string' && item.Tanggal.includes('/'))
             .map(item => item.Tanggal.split('/')[2])
     )].sort((a, b) => b - a);
-
     const yearOptions = '<option value="">Semua Tahun</option>' + years.map(year => `<option value="${year}">${year}</option>`).join('');
     yearFilter.innerHTML = yearOptions;
     yearFilterMobile.innerHTML = yearOptions;
-    
     const statusOptionsHtml = '<option value="">Semua Status</option>' + statusOptions.map(status => `<option value="${status}">${status}</option>`).join('');
     statusFilter.innerHTML = statusOptionsHtml;
     statusFilterMobile.innerHTML = statusOptionsHtml;
-
     const monthOptions = '<option value="">Semua Bulan</option>' + monthNames.map((name, index) => `<option value="${String(index + 1).padStart(2, '0')}">${name}</option>`).join('');
     monthFilter.innerHTML = monthOptions;
     monthFilterMobile.innerHTML = monthOptions;
@@ -659,17 +654,13 @@ function applyAndRenderFilters() {
     const status = statusFilter.value;
     const month = monthFilter.value;
     const year = yearFilter.value;
-    
     let filteredData = localData.filter(item => {
         if (!item) return false;
-
         const searchMatch = !searchTerm || (item.Deskripsi && item.Deskripsi.toLowerCase().includes(searchTerm));
         const statusMatch = !status || item.Status === status;
         if (!searchMatch || !statusMatch) return false;
-        
         const hasDate = typeof item.Tanggal === 'string' && item.Tanggal.includes('/');
         if (!month && !year) return true;
-
         if (hasDate) {
             const [, itemMonth, itemYear] = item.Tanggal.split('/');
             const monthMatch = !month || itemMonth === month;
@@ -678,35 +669,27 @@ function applyAndRenderFilters() {
         }
         return false;
     });
-
     filteredData.sort((a, b) => {
         const pinA = a.Pin === true || a.Pin === 'TRUE' ? 1 : 0;
         const pinB = b.Pin === true || b.Pin === 'TRUE' ? 1 : 0;
         if (pinB !== pinA) return pinB - pinA;
         return 0;
     });
-
     renderData(filteredData);
 }
 
 function resetFilters() {
-    searchInput.value = '';
-    searchInputMobile.value = '';
-    statusFilter.value = '';
-    monthFilter.value = '';
-    yearFilter.value = '';
-    applyAndRenderFilters();
+    searchInput.value = ''; searchInputMobile.value = ''; statusFilter.value = '';
+    monthFilter.value = ''; yearFilter.value = ''; applyAndRenderFilters();
 }
 
 function syncMobileFilters() {
-    statusFilter.value = statusFilterMobile.value;
-    monthFilter.value = monthFilterMobile.value;
+    statusFilter.value = statusFilterMobile.value; monthFilter.value = monthFilterMobile.value;
     yearFilter.value = yearFilterMobile.value;
 }
 
 function syncDesktopFilters() {
-    statusFilterMobile.value = statusFilter.value;
-    monthFilterMobile.value = monthFilter.value;
+    statusFilterMobile.value = statusFilter.value; monthFilterMobile.value = monthFilter.value;
     yearFilterMobile.value = yearFilter.value;
 }
 
@@ -719,7 +702,6 @@ function renderColorButtons() {
     noColorBtn.innerHTML = `<i data-lucide="slash" class="w-5 h-5 text-gray-500"></i>`;
     noColorBtn.onclick = () => setActiveColor('default');
     colorContainer.appendChild(noColorBtn);
-
     Object.keys(colorClasses).forEach(color => {
         const button = document.createElement('button');
         button.type = 'button';
@@ -732,11 +714,7 @@ function renderColorButtons() {
 
 function setActiveColor(activeColor) {
     warnaInput.value = activeColor === 'default' ? '' : activeColor;
-    
-    const ringColorValues = {
-        blue: '#93c5fd', green: '#86efac', yellow: '#fde047', red: '#fca5a5', purple: '#c4b5fd', default: '#9ca3af'
-    };
-
+    const ringColorValues = { blue: '#93c5fd', green: '#86efac', yellow: '#fde047', red: '#fca5a5', purple: '#c4b5fd', default: '#9ca3af' };
     colorContainer.querySelectorAll('.color-swatch').forEach(btn => {
         const btnColor = btn.dataset.color;
         const isSelected = btnColor === activeColor;
@@ -748,14 +726,11 @@ function setActiveColor(activeColor) {
 async function togglePin(id) {
     const itemIndex = localData.findIndex(d => d && d['ID Kinerja'] === id);
     if (itemIndex === -1) return;
-
     const item = localData[itemIndex];
     const newPinStatus = !(item.Pin === true || item.Pin === 'TRUE');
     const dataToUpdate = { ...item, Pin: newPinStatus, action: 'update', files: [] };
-    
     const pinButton = document.querySelector(`[data-id="${id}"] .pin-btn`);
     if (pinButton) pinButton.disabled = true;
-
     try {
         await sendDataToServer(dataToUpdate);
         localData[itemIndex].Pin = newPinStatus;
@@ -765,16 +740,6 @@ async function togglePin(id) {
     } finally {
         if (pinButton) pinButton.disabled = false;
     }
-}
-
-function openSidebar() { 
-    sidebar.classList.remove('-translate-x-full'); 
-    sidebarOverlay.classList.remove('hidden'); 
-}
-
-function closeSidebar() { 
-    sidebar.classList.add('-translate-x-full'); 
-    sidebarOverlay.classList.add('hidden'); 
 }
 
 // --- EVENT LISTENERS ---
@@ -792,18 +757,16 @@ document.addEventListener('DOMContentLoaded', () => {
     fileInput.addEventListener('change', handleFileSelect);
     resetFilterButton.addEventListener('click', resetFilters);
     resetFilterButtonMobile.addEventListener('click', resetFilters);
-    reloadDataButton.addEventListener('click', fetchData);
-    [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
-    searchInputMobile.addEventListener('input', applyAndRenderFilters);
+    reloadDataButton.addEventListener('click', () => fetchData(activeView));
     
-    // Navigasi
+    // Navigasi & Sidebar
     navKinerja.addEventListener('click', (e) => { e.preventDefault(); switchView('kinerja'); });
     navSkp.addEventListener('click', (e) => { e.preventDefault(); switchView('skp'); });
-    hamburgerButton.addEventListener('click', openSidebar);
-    closeSidebarButton.addEventListener('click', closeSidebar);
-    sidebarOverlay.addEventListener('click', closeSidebar);
+    hamburgerButton.addEventListener('click', toggleSidebar);
 
-    // Filter Mobile
+    // Filter Listeners
+    [searchInput, statusFilter, monthFilter, yearFilter].forEach(el => el.addEventListener('input', applyAndRenderFilters));
+    searchInputMobile.addEventListener('input', applyAndRenderFilters);
     mobileFilterButton.addEventListener('click', () => { syncDesktopFilters(); mobileFilterModal.classList.remove('hidden'); });
     closeMobileFilterButton.addEventListener('click', () => mobileFilterModal.classList.add('hidden'));
     applyMobileFilterButton.addEventListener('click', () => { syncMobileFilters(); applyAndRenderFilters(); mobileFilterModal.classList.add('hidden'); });
