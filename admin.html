@@ -23,25 +23,26 @@
             box-shadow: 0 0 0 2px white, 0 0 0 4px var(--ring-color);
         }
         
-        /* --- Sidebar Base & Transition Styles --- */
-        .sidebar { transition: width 0.3s ease-in-out, transform 0.3s ease-in-out; }
-        .sidebar .nav-text { transition: opacity 0.2s, visibility 0.2s; white-space: nowrap; }
-        .main-content { transition: padding-left 0.3s ease-in-out; }
-
-        /* --- Desktop Styles (md and up) --- */
-        @media (min-width: 768px) {
-            .main-content { padding-left: 16rem; /* w-64 default */ }
-            .sidebar-collapsed .sidebar { width: 4.5rem; /* w-18 */ }
-            .sidebar-collapsed .main-content { padding-left: 4.5rem; }
-            
-            .sidebar-collapsed .sidebar .nav-text { display: none; }
-            .sidebar-collapsed .sidebar .nav-link { justify-content: center; }
-
-            .sidebar-collapsed .sidebar .sidebar-header-content { justify-content: center; }
-            .sidebar-collapsed .sidebar .app-title { display: none; }
-            .sidebar-collapsed .sidebar .placeholder-logo { display: block; }
+        .toast {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+        }
+        .toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 30px;
         }
 
+        @media (min-width: 768px) {
+            .main-content { padding-left: 16rem; transition: padding-left 0.3s ease-in-out; }
+            .sidebar { transition: width 0.3s ease-in-out; }
+            .sidebar-collapsed .sidebar { width: 4.5rem; }
+            .sidebar-collapsed .main-content { padding-left: 4.5rem; }
+            .sidebar-collapsed .sidebar .nav-text, .sidebar-collapsed .sidebar .app-title { display: none; }
+            .sidebar-collapsed .sidebar .nav-link, .sidebar-collapsed .sidebar .sidebar-header-content { justify-content: center; }
+            .sidebar-collapsed .sidebar .placeholder-logo { display: block; }
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 sidebar-collapsed">
@@ -62,7 +63,6 @@
 
     <!-- Konten Utama -->
     <div id="main-container" class="hidden">
-        <!-- Sidebar Overlay for Mobile -->
         <div id="sidebar-overlay" class="fixed inset-0 bg-black/30 z-30 hidden md:hidden"></div>
         
         <aside id="sidebar" class="sidebar fixed top-0 left-0 w-64 h-full bg-white border-r -translate-x-full md:translate-x-0 z-40">
@@ -158,7 +158,6 @@
                         <div id="skp-card-container" class="sm:hidden grid grid-cols-1 gap-4"></div>
                     </div>
 
-                    <!-- Pagination Container -->
                     <div id="pagination-container" class="mt-6"></div>
                 </div>
 
@@ -191,6 +190,10 @@
         <div class="bg-white rounded-t-xl shadow-xl w-full p-6 space-y-4" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center"><h3 class="text-lg font-semibold text-gray-900">Filter Data</h3><button id="close-mobile-filter-button" class="p-2 -mr-2 rounded-full hover:bg-gray-100"><i data-lucide="x"></i></button></div><div class="space-y-4"><select id="status-filter-mobile" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select><select id="month-filter-mobile" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select><select id="year-filter-mobile" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white text-sm"></select></div><div class="flex justify-end gap-3 pt-4"><button type="button" id="apply-mobile-filter-button" class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700">Terapkan Filter</button></div>
         </div>
+    </div>
+
+    <div id="toast-notification" class="toast fixed bottom-0 left-1/2 -translate-x-1/2 mb-4 px-4 py-2 bg-gray-800 text-white text-sm rounded-lg shadow-md">
+        Deskripsi disalin!
     </div>
 
     <script src="admin.js"></script>
