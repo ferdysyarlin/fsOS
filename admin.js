@@ -25,7 +25,7 @@ const colorClasses = {
 };
 
 // --- Elemen DOM (Deklarasi Awal) ---
-let body, pinModalOverlay, pinForm, pinInput, pinError, mainContainer, addDataButton, loadingDiv, errorDiv, errorMessageP, listView, detailView, detailContent, pageTitle, sidebar, sidebarOverlay, hamburgerButton, closeSidebarButton, navKinerja, navSkp, kinerjaView, tableBody, cardContainer, skpView, skpTableBody, filterBar, paginationContainer, formModalOverlay, closeFormModalButton, form, submitButton, idKinerjaInput, tanggalInput, deskripsiInput, statusContainer, statusInput, fileInput, fileNameSpan, fileLamaP, deleteModalOverlay, cancelDeleteButton, confirmDeleteButton, searchInput, statusFilter, monthFilter, yearFilter, resetFilterButton, reloadDataButton, mobileFilterButton, mobileFilterModal, closeMobileFilterButton, applyMobileFilterButton, searchInputMobile, statusFilterMobile, monthFilterMobile, yearFilterMobile, colorContainer, warnaInput, resetFilterButtonMobile;
+let body, pinModalOverlay, pinForm, pinInput, pinError, mainContainer, addDataButton, loadingDiv, errorDiv, errorMessageP, listView, detailView, detailContent, pageTitle, sidebar, sidebarOverlay, hamburgerButton, closeSidebarButton, navKinerja, navSkp, kinerjaView, tableBody, cardContainer, skpView, skpTableBody, skpCardContainer, filterBar, paginationContainer, formModalOverlay, closeFormModalButton, form, submitButton, idKinerjaInput, tanggalInput, deskripsiInput, statusContainer, statusInput, fileInput, fileNameSpan, fileLamaP, deleteModalOverlay, cancelDeleteButton, confirmDeleteButton, searchInput, statusFilter, monthFilter, yearFilter, resetFilterButton, reloadDataButton, mobileFilterButton, mobileFilterModal, closeMobileFilterButton, applyMobileFilterButton, searchInputMobile, statusFilterMobile, monthFilterMobile, yearFilterMobile, colorContainer, warnaInput, resetFilterButtonMobile;
 
 
 // --- FUNGSI UTAMA & MANAJENEN APLIKASI ---
@@ -55,13 +55,14 @@ function switchView(viewName) {
     if (activeView === viewName) return;
     activeView = viewName;
     hideDetailView();
-    currentPage = 1; // Reset pagination when switching views
+    currentPage = 1;
 
     const isKinerjaView = viewName === 'kinerja';
 
     kinerjaView.classList.toggle('hidden', !isKinerjaView);
     skpView.classList.toggle('hidden', isKinerjaView);
     filterBar.classList.toggle('hidden', !isKinerjaView);
+    paginationContainer.classList.toggle('hidden', !isKinerjaView);
     addDataButton.classList.toggle('hidden', !isKinerjaView);
     pageTitle.textContent = isKinerjaView ? 'Kinerja' : 'SKP';
 
@@ -74,7 +75,7 @@ function switchView(viewName) {
     } else {
         if (skpData.length > 0) renderSkpData(skpData);
         else if (isDataLoading.skp) {
-            skpTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">Memuat data SKP...</td></tr>`;
+             showLoading(); // Tampilkan loading untuk SKP jika datanya belum siap
         }
     }
     if (window.innerWidth < 768) {
@@ -95,7 +96,7 @@ async function fetchData(view, isBackground = false) {
         if (data.error) throw new Error(data.error);
 
         if (view === 'kinerja') {
-            localData = data; // Data tidak diurutkan di sini, pengurutan terpusat di applyAndRenderFilters
+            localData = data;
             if (!isBackground && activeView === 'kinerja') {
                 populateFilters();
                 currentPage = 1;
@@ -103,7 +104,7 @@ async function fetchData(view, isBackground = false) {
             }
         } else if (view === 'skp') {
             skpData = data;
-            if (!isBackground && activeView === 'skp') {
+            if (activeView === 'skp') { // Render jika pengguna sudah di halaman SKP
                 renderSkpData(skpData);
             }
         }
@@ -266,7 +267,7 @@ function renderPagination(totalItems) {
     paginationContainer.innerHTML = paginationHTML;
     lucide.createIcons();
 
-    paginationContainer.querySelectorAll('a').forEach(a => {
+    paginationContainer.querySelectorAll('a[data-page]').forEach(a => {
         a.addEventListener('click', (e) => {
             e.preventDefault();
             currentPage = parseInt(e.currentTarget.dataset.page);
@@ -328,31 +329,64 @@ function createCardView(item) {
 
 function renderSkpData(dataToRender) {
     skpTableBody.innerHTML = '';
+    skpCardContainer.innerHTML = '';
     if (!dataToRender || dataToRender.length === 0) {
-        skpTableBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">Tidak ada data SKP.</td></tr>`;
+        const emptyMessage = `<tr><td colspan="5" class="text-center py-10 text-gray-500">Tidak ada data SKP.</td></tr>`;
+        skpTableBody.innerHTML = emptyMessage;
+        skpCardContainer.innerHTML = `<p class="text-center py-10 text-gray-500">Tidak ada data SKP.</p>`;
         return;
     }
     dataToRender.forEach(item => {
-        const row = document.createElement('tr');
-        const uniqueId = item['Tahun'] + item['Atasan'];
-        row.className = 'hover:bg-gray-50 cursor-pointer';
-        row.setAttribute('data-id', uniqueId);
-        const { predikatClass, nilaiClass } = getSkpColor(item.Predikat);
-        row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.Tahun}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${item.Atasan}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="px-2 py-1 rounded-md font-semibold ${nilaiClass}">${item.Nilai}</span></td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="font-semibold ${predikatClass}">${item.Predikat}</span></td>
-            <td class="px-6 py-4 whitespace-nowrap text-center">
-                <button class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors">
-                    <i data-lucide="eye" class="w-4 h-4"></i>
-                    Lihat
-                </button>
-            </td>`;
-        skpTableBody.appendChild(row);
+        createSkpTableRow(item);
+        createSkpCard(item);
     });
     lucide.createIcons();
 }
+
+function createSkpTableRow(item){
+    const row = document.createElement('tr');
+    const uniqueId = item['Tahun'] + item['Atasan'];
+    row.className = 'hover:bg-gray-50 cursor-pointer';
+    row.setAttribute('data-id', uniqueId);
+    const { predikatClass, nilaiClass } = getSkpColor(item.Predikat);
+    row.innerHTML = `
+        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.Tahun}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${item.Atasan}</td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="px-2 py-1 rounded-md font-semibold ${nilaiClass}">${item.Nilai}</span></td>
+        <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="font-semibold ${predikatClass}">${item.Predikat}</span></td>
+        <td class="px-6 py-4 whitespace-nowrap text-center">
+            <button class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+                Lihat
+            </button>
+        </td>`;
+    skpTableBody.appendChild(row);
+}
+
+function createSkpCard(item) {
+    const card = document.createElement('div');
+    const uniqueId = item['Tahun'] + item['Atasan'];
+    card.className = `rounded-xl shadow-md p-4 flex flex-col gap-3 bg-white cursor-pointer`;
+    card.setAttribute('data-id', uniqueId);
+    const { predikatClass, nilaiClass } = getSkpColor(item.Predikat);
+    card.innerHTML = `
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm font-semibold text-gray-800">${item.Atasan}</p>
+                <p class="text-xs text-gray-500">Tahun ${item.Tahun}</p>
+            </div>
+            <span class="font-semibold text-sm ${predikatClass}">${item.Predikat}</span>
+        </div>
+        <div class="border-t pt-3 flex justify-between items-center">
+             <span class="text-sm">Nilai: <span class="px-2 py-1 rounded-md font-bold ${nilaiClass}">${item.Nilai}</span></span>
+             <button class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+                Lihat File
+            </button>
+        </div>`;
+    skpCardContainer.appendChild(card);
+}
+
 
 function getSkpColor(predikat) {
     switch (predikat) {
@@ -695,26 +729,31 @@ function populateFilters() {
 }
 
 function applyAndRenderFilters() {
+    const searchTerm = (searchInput.value || searchInputMobile.value || "").toLowerCase();
+    const status = statusFilter.value;
+    const month = monthFilter.value;
+    const year = yearFilter.value;
+    
     let filteredData = localData.filter(item => {
         if (!item) return false;
-        // Robust search: ensure item.Deskripsi is a string
-        const searchMatch = !searchInput.value || (item.Deskripsi && typeof item.Deskripsi === 'string' && item.Deskripsi.toLowerCase().includes(searchInput.value.toLowerCase()));
-        const statusMatch = !statusFilter.value || item.Status === statusFilter.value;
+        
+        const searchMatch = !searchTerm || (item.Deskripsi && typeof item.Deskripsi === 'string' && item.Deskripsi.toLowerCase().includes(searchTerm));
+        const statusMatch = !status || item.Status === status;
+        
         if (!searchMatch || !statusMatch) return false;
         
         const hasDate = typeof item.Tanggal === 'string' && item.Tanggal.includes('/');
-        if (!monthFilter.value && !yearFilter.value) return true;
+        if (!month && !year) return true;
         
         if (hasDate) {
             const [, itemMonth, itemYear] = item.Tanggal.split('/');
-            const monthMatch = !monthFilter.value || itemMonth === monthFilter.value;
-            const yearMatch = !yearFilter.value || itemYear === yearFilter.value;
+            const monthMatch = !month || itemMonth === month;
+            const yearMatch = !year || itemYear === year;
             return monthMatch && yearMatch;
         }
         return false;
     });
 
-    // Centralized sorting logic
     filteredData.sort((a, b) => {
         const pinA = a.Pin === true || a.Pin === 'TRUE' ? 1 : 0;
         const pinB = b.Pin === true || b.Pin === 'TRUE' ? 1 : 0;
@@ -822,6 +861,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cardContainer = document.getElementById('kinerja-card-container');
     skpView = document.getElementById('skp-view');
     skpTableBody = document.getElementById('skp-table-body');
+    skpCardContainer = document.getElementById('skp-card-container');
     filterBar = document.getElementById('filter-bar');
     paginationContainer = document.getElementById('pagination-container');
     formModalOverlay = document.getElementById('form-modal-overlay');
