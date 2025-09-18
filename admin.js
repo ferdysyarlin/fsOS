@@ -13,7 +13,7 @@ let isDataLoading = { kinerja: false, skp: false };
 const statusOptions = ['Hadir', 'Lembur', 'Cuti', 'Dinas', 'Sakit', 'ST'];
 const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 let currentPage = 1;
-const ITEMS_PER_PAGE = 100;
+const ITEMS_PER_PAGE = 50;
 
 // Palet Warna Pastel
 const colorOptions = {
@@ -28,7 +28,7 @@ const colorClasses = {
 let body, pinModalOverlay, pinForm, pinInput, pinError, mainContainer, addDataButton, loadingDiv, errorDiv, errorMessageP, listView, detailView, detailContent, pageTitle, sidebar, sidebarOverlay, hamburgerButton, closeSidebarButton, navKinerja, navSkp, kinerjaView, tableBody, cardContainer, skpView, skpTableBody, filterBar, paginationContainer, formModalOverlay, closeFormModalButton, form, submitButton, idKinerjaInput, tanggalInput, deskripsiInput, statusContainer, statusInput, fileInput, fileNameSpan, fileLamaP, deleteModalOverlay, cancelDeleteButton, confirmDeleteButton, searchInput, statusFilter, monthFilter, yearFilter, resetFilterButton, reloadDataButton, mobileFilterButton, mobileFilterModal, closeMobileFilterButton, applyMobileFilterButton, searchInputMobile, statusFilterMobile, monthFilterMobile, yearFilterMobile, colorContainer, warnaInput, resetFilterButtonMobile;
 
 
-// --- FUNGSI UTAMA & MANAJEMEN APLIKASI ---
+// --- FUNGSI UTAMA & MANAJENEN APLIKASI ---
 
 async function initializeApp() {
     await fetchData('kinerja', false);
