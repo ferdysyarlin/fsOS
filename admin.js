@@ -393,12 +393,12 @@ function createSkpCard(item) {
         <div class="flex justify-between items-start">
             <div>
                 <p class="text-sm font-semibold text-gray-800">${item.Atasan}</p>
-                <p class="text-xs text-gray-500">Tahun ${item.Tahun}</p>
+                <p class="text-sm text-gray-500">${item.Tahun}</p>
             </div>
             <span class="font-semibold text-sm ${predikatClass}">${item.Predikat}</span>
         </div>
         <div class="border-t pt-3 flex justify-between items-center">
-             <span class="text-sm">Nilai: <span class="px-2 py-1 rounded-md font-bold ${nilaiClass}">${item.Nilai}</span></span>
+             <span class="text-sm"><span class="px-2 py-1 rounded-md font-bold ${nilaiClass}">${item.Nilai}</span></span>
              <button class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition-colors">
                 <i data-lucide="eye" class="w-4 h-4"></i>
                 Lihat File
@@ -447,8 +447,8 @@ function renderSkpDetail(data) { // Detail untuk SKP
         <button onclick="hideDetailView()" class="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali</button>
         <div>
             <div class="flex justify-between items-center mb-2">
-                <label class="text-xs text-gray-500 uppercase font-semibold">Pratinjau File SKP Tahun ${data.Tahun}</label>
-                <a href="${data.File}" target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-600 hover:underline font-semibold">Buka di Tab Baru <i data-lucide="external-link" class="inline w-3 h-3"></i></a>
+                <label class="text-xs text-gray-500 uppercase font-semibold">SKP Tahun ${data.Tahun}</label>
+                <a href="${data.File}" target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-600 hover:underline font-semibold">Buka <i data-lucide="external-link" class="inline w-3 h-3"></i></a>
             </div>
             ${embedUrl ? `<iframe src="${embedUrl}" class="w-full h-[70vh] border rounded-lg bg-gray-100" frameborder="0"></iframe>` : 
             `<div class="w-full h-96 border rounded-lg bg-gray-50 flex flex-col items-center justify-center p-4"><i data-lucide="file-x" class="w-12 h-12 text-gray-400 mb-2"></i><p class="text-sm text-gray-500">URL file tidak valid atau tidak dapat disematkan.</p></div>`
