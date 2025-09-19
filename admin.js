@@ -307,11 +307,11 @@ function createTableRow(item) {
         <td class="px-6 py-4 data-cell"><div class="text-sm text-gray-700 whitespace-pre-wrap max-h-20 overflow-y-auto">${item.Deskripsi || ''}</div></td>
         <td class="px-6 py-4 whitespace-nowrap data-cell">${getStatusBadge(item.Status)}</td>
         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-right">
-            <div class="flex items-center justify-end gap-1">
-                <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition copy-btn" title="Salin Deskripsi"><i data-lucide="copy" class="w-5 h-5"></i></button>
-                <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition pin-btn" title="Sematkan">${pinIcon}</button>
-                <button class="p-2 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn" title="Ubah"><i data-lucide="pencil" class="w-5 h-5"></i></button>
-                <button class="p-2 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn" title="Hapus"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+            <div class="flex items-center justify-end gap-0">
+                <button class="p-1 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition copy-btn" title="Salin Deskripsi"><i data-lucide="copy" class="w-5 h-5"></i></button>
+                <button class="p-1 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition pin-btn" title="Sematkan">${pinIcon}</button>
+                <button class="p-1 rounded-full hover:bg-gray-200 text-gray-500 hover:text-gray-800 transition edit-btn" title="Ubah"><i data-lucide="pencil" class="w-5 h-5"></i></button>
+                <button class="p-1 rounded-full hover:bg-red-100 text-gray-500 hover:text-red-600 transition delete-btn" title="Hapus"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
             </div>
         </td>`;
     tableBody.appendChild(row);
@@ -331,15 +331,15 @@ function createCardView(item) {
             </div>
         </div>
         <div class="border-t border-gray-200 pt-3 flex items-center justify-between">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
                 <p class="text-xs text-gray-500">${item.Tanggal || 'N/A'}</p>
                 ${getStatusBadge(item.Status)}
             </div>
             <div class="flex items-center">
-                 <button class="p-2 rounded-full hover:bg-black/5 text-gray-500 hover:text-gray-800 transition copy-btn" title="Salin Deskripsi"><i data-lucide="copy" class="w-5 h-5"></i></button>
-                 <button class="p-2 rounded-full hover:bg-black/5 text-gray-500 hover:text-gray-800 transition pin-btn" title="Sematkan">${pinIcon}</button>
-                 <button class="p-2 rounded-full hover:bg-black/5 text-gray-500 hover:text-gray-800 transition edit-btn" title="Ubah"><i data-lucide="pencil" class="w-5 h-5"></i></button>
-                 <button class="p-2 rounded-full hover:bg-black/5 text-gray-500 hover:text-red-600 transition delete-btn" title="Hapus"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                 <button class="p-1 rounded-full hover:bg-black/5 text-gray-500 hover:text-gray-800 transition copy-btn" title="Salin Deskripsi"><i data-lucide="copy" class="w-5 h-5"></i></button>
+                 <button class="p-1 rounded-full hover:bg-black/5 text-gray-500 hover:text-gray-800 transition pin-btn" title="Sematkan">${pinIcon}</button>
+                 <button class="p-1 rounded-full hover:bg-black/5 text-gray-500 hover:text-gray-800 transition edit-btn" title="Ubah"><i data-lucide="pencil" class="w-5 h-5"></i></button>
+                 <button class="p-1 rounded-full hover:bg-black/5 text-gray-500 hover:text-red-600 transition delete-btn" title="Hapus"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
             </div>
         </div>`;
     cardContainer.appendChild(card);
@@ -760,13 +760,13 @@ function populateFilters() {
         localData.filter(item => item && typeof item.Tanggal === 'string' && item.Tanggal.includes('/'))
             .map(item => item.Tanggal.split('/')[2])
     )].sort((a, b) => b - a);
-    const yearOptions = '<option value="">Semua Tahun</option>' + years.map(year => `<option value="${year}">${year}</option>`).join('');
+    const yearOptions = '<option value="">Tahun</option>' + years.map(year => `<option value="${year}">${year}</option>`).join('');
     yearFilter.innerHTML = yearOptions;
     yearFilterMobile.innerHTML = yearOptions;
-    const statusOptionsHtml = '<option value="">Semua Status</option>' + statusOptions.map(status => `<option value="${status}">${status}</option>`).join('');
+    const statusOptionsHtml = '<option value="">Status</option>' + statusOptions.map(status => `<option value="${status}">${status}</option>`).join('');
     statusFilter.innerHTML = statusOptionsHtml;
     statusFilterMobile.innerHTML = statusOptionsHtml;
-    const monthOptions = '<option value="">Semua Bulan</option>' + monthNames.map((name, index) => `<option value="${String(index + 1).padStart(2, '0')}">${name}</option>`).join('');
+    const monthOptions = '<option value="">Bulan</option>' + monthNames.map((name, index) => `<option value="${String(index + 1).padStart(2, '0')}">${name}</option>`).join('');
     monthFilter.innerHTML = monthOptions;
     monthFilterMobile.innerHTML = monthOptions;
 }
